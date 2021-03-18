@@ -11,6 +11,9 @@
     <Filter Include="03 Прочее">
       <UniqueIdentifier>{acd56a78-14a0-48e7-b7e9-d5714b8078c6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="04 Скрипты">
+      <UniqueIdentifier>{1b6a64df-6557-420a-9f6e-c374ccbbd340}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="starter.h">
@@ -58,5 +61,10 @@
     <ResourceCompile Include="starter.rc">
       <Filter>02 Ресурсы</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\modules\starter\src\main.as">
+      <Filter>04 Скрипты</Filter>
+    </None>
   </ItemGroup>
 </Project>

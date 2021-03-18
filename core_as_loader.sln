@@ -9,9 +9,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "starter", "src\starter\star
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "all", "all.vcxproj", "{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}"
-	ProjectSection(ProjectDependencies) = postProject
-		{6BA093C5-A0F1-4BC4-9A55-4EF8323570DA} = {6BA093C5-A0F1-4BC4-9A55-4EF8323570DA}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "runner", "src\runner\runner.vcxproj", "{D09F3BF2-0234-4737-B91E-53998B28CE47}"
 EndProject
@@ -31,12 +28,10 @@ Global
 		{6BA093C5-A0F1-4BC4-9A55-4EF8323570DA}.Release|x64.ActiveCfg = Release|x64
 		{6BA093C5-A0F1-4BC4-9A55-4EF8323570DA}.Release|x86.ActiveCfg = Release|Win32
 		{6BA093C5-A0F1-4BC4-9A55-4EF8323570DA}.Release|x86.Build.0 = Release|Win32
-		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Debug|x64.ActiveCfg = Debug|x64
-		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Debug|x64.Build.0 = Debug|x64
-		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Debug|x86.ActiveCfg = Debug|Win32
-		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Debug|x86.Build.0 = Debug|Win32
-		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Release|x64.ActiveCfg = Release|x64
-		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Release|x64.Build.0 = Release|x64
+		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Debug|x64.ActiveCfg = Release|Win32
+		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Debug|x86.ActiveCfg = Release|Win32
+		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Release|x64.ActiveCfg = Release|Win32
+		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Release|x64.Build.0 = Release|Win32
 		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Release|x86.ActiveCfg = Release|Win32
 		{EB77756E-50DF-4F3E-99C8-02B5AC384DA9}.Release|x86.Build.0 = Release|Win32
 		{D09F3BF2-0234-4737-B91E-53998B28CE47}.Debug|x64.ActiveCfg = Debug|x64

@@ -120,6 +120,11 @@
       <AdditionalDependencies>core_as.lib;inject.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>core_as.dll;inject.dll</DelayLoadDLLs>
     </Link>
+    <PreBuildEvent>
+      <Command>robocopy ..\modules\starter "$(OutDir)modules\starter" /mir /im /NJH /NJS /NP&gt;nul
+exit 0
+</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -151,6 +156,11 @@
       <AdditionalDependencies>core_as.lib;inject.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>core_as.dll;inject.dll</DelayLoadDLLs>
     </Link>
+    <PreBuildEvent>
+      <Command>robocopy ..\modules\starter "$(OutDir)modules\starter" /mir /im /NJH /NJS /NP&gt;nul
+exit 0
+</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -223,6 +233,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="starter.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\modules\starter\src\main.as" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

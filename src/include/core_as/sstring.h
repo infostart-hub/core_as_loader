@@ -8,6 +8,50 @@
 
 template<typename T>
 struct unicode_traits {};
+template<>
+struct unicode_traits<u8symbol> {
+    // Эти операции с utf-8 могут изменить длину строки
+    // Поэтому их специализации отличаются
+    // В функцию помимо текста и адреса буфера для записи передается размер буфера
+    // Возвращает длину получающейся строки.
+    // Если получающеюся строка не влезает в отведенный буфер, указатели устанавливаются на последние
+    // обработанные символы, для повторного возобновления работы,
+    // а для оставшихся символов считается нужный размер буфера.
+    static COREAS_API uint upper(const u8symbol*& src, uint lenStr, u8symbol*& dest, uint lenBuf);
+    static COREAS_API uint lower(const u8symbol*& src, uint len, u8symbol*& dest, uint lenBuf);
+    static COREAS_API uint findFirstLower(const u8symbol* src, uint lenStr);
+    static COREAS_API uint findFirstUpper(const u8symbol* src, uint lenStr);
+
+    static COREAS_API int compareiu(const u8symbol* text1, uint len1, const u8symbol* text2, uint len2);
+
+    static COREAS_API size_t hashia(const u8symbol* src, uint l);
+    static COREAS_API size_t hashiu(const u8symbol* src, uint l);
+};
+
+template<>
+struct unicode_traits<u16symbol> {
+    static COREAS_API void upper(const u16symbol* src, uint len, u16symbol* dest);
+    static COREAS_API void lower(const u16symbol* src, uint len, u16symbol* dest);
+    static COREAS_API uint findFirstLower(const u16symbol* src, uint lenStr);
+    static COREAS_API uint findFirstUpper(const u16symbol* src, uint lenStr);
+
+    static COREAS_API int compareiu(const u16symbol* text1, uint len1, const u16symbol* text2, uint len2);
+    static COREAS_API size_t hashia(const u16symbol* src, uint l);
+    static COREAS_API size_t hashiu(const u16symbol* src, uint l);
+};
+
+template<>
+struct unicode_traits<u32symbol> {
+    static COREAS_API void upper(const u32symbol* src, uint len, u32symbol* dest);
+    static COREAS_API void lower(const u32symbol* src, uint len, u32symbol* dest);
+    static COREAS_API uint findFirstLower(const u32symbol* src, uint lenStr);
+    static COREAS_API uint findFirstUpper(const u32symbol* src, uint lenStr);
+
+    static COREAS_API int compareiu(const u32symbol* text1, uint len1, const u32symbol* text2, uint len2);
+    static COREAS_API size_t hashia(const u32symbol* src, uint s);
+    static COREAS_API size_t hashiu(const u32symbol* src, uint s);
+};
+
 namespace str_pos {
 constexpr const uint badIdx = static_cast<uint>(-1);
 }
@@ -2597,50 +2641,6 @@ template<typename T>
 using hashStrMapUIA = hashStrMap<u32symbol, T, strhashia<u32symbol>, streqlia<u32symbol>>;
 template<typename T>
 using hashStrMapUIU = hashStrMap<u32symbol, T, strhashiu<u32symbol>, streqliu<u32symbol>>;
-
-template<>
-struct unicode_traits<u8symbol> {
-    // Эти операции с utf-8 могут изменить длину строки
-    // Поэтому их специализации отличаются
-    // В функцию помимо текста и адреса буфера для записи передается размер буфера
-    // Возвращает длину получающейся строки.
-    // Если получающеюся строка не влезает в отведенный буфер, указатели устанавливаются на последние
-    // обработанные символы, для повторного возобновления работы,
-    // а для оставшихся символов считается нужный размер буфера.
-    static COREAS_API uint upper(const u8symbol*& src, uint lenStr, u8symbol*& dest, uint lenBuf);
-    static COREAS_API uint lower(const u8symbol*& src, uint len, u8symbol*& dest, uint lenBuf);
-    static COREAS_API uint findFirstLower(const u8symbol* src, uint lenStr);
-    static COREAS_API uint findFirstUpper(const u8symbol* src, uint lenStr);
-
-    static COREAS_API int compareiu(const u8symbol* text1, uint len1, const u8symbol* text2, uint len2);
-
-    static COREAS_API size_t hashia(const u8symbol* src, uint l);
-    static COREAS_API size_t hashiu(const u8symbol* src, uint l);
-};
-
-template<>
-struct unicode_traits<u16symbol> {
-    static COREAS_API void upper(const u16symbol* src, uint len, u16symbol* dest);
-    static COREAS_API void lower(const u16symbol* src, uint len, u16symbol* dest);
-    static COREAS_API uint findFirstLower(const u16symbol* src, uint lenStr);
-    static COREAS_API uint findFirstUpper(const u16symbol* src, uint lenStr);
-
-    static COREAS_API int compareiu(const u16symbol* text1, uint len1, const u16symbol* text2, uint len2);
-    static COREAS_API size_t hashia(const u16symbol* src, uint l);
-    static COREAS_API size_t hashiu(const u16symbol* src, uint l);
-};
-
-template<>
-struct unicode_traits<u32symbol> {
-    static COREAS_API void upper(const u32symbol* src, uint len, u32symbol* dest);
-    static COREAS_API void lower(const u32symbol* src, uint len, u32symbol* dest);
-    static COREAS_API uint findFirstLower(const u32symbol* src, uint lenStr);
-    static COREAS_API uint findFirstUpper(const u32symbol* src, uint lenStr);
-
-    static COREAS_API int compareiu(const u32symbol* text1, uint len1, const u32symbol* text2, uint len2);
-    static COREAS_API size_t hashia(const u32symbol* src, uint s);
-    static COREAS_API size_t hashiu(const u32symbol* src, uint s);
-};
 
 static_assert(sizeof(sstring<u8symbol>) == sizeof(u8symbol*));
 

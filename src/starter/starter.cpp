@@ -12,7 +12,6 @@ HWND hMainWnd;
 // Сюда будем писать команды для x64 инжектора - снять хук/установить хук
 HANDLE h64Write = nullptr;
 const wchar_t szWindowClass[] = L"Core.As.Starter";
-class __declspec(uuid("B5B1E492-0CA7-4BEC-AB7F-D74887A3A4FF")) MyIcon;
 
 /*
 * Назначение программы:
@@ -128,7 +127,6 @@ void showContextMenu(POINT pt) {
 bool showNotify(const wchar_t* msg) {
     NOTIFYICONDATA nid = { sizeof(nid) };
     nid.uFlags = NIF_INFO | NIF_GUID;
-    nid.guidItem = __uuidof(MyIcon);
     nid.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON | NIIF_NOSOUND;
     wcscpy(nid.szInfoTitle, AppName);
     wcscpy(nid.szInfo, msg);
@@ -224,11 +222,9 @@ BOOL InitInstance() {
 
 bool createTrayIcon() {
     NOTIFYICONDATA nid = {0};
-    memset(&nid, 0, sizeof(nid));
     nid.cbSize = sizeof(nid);
     nid.hWnd = hMainWnd;
     nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP;
-    //nid.guidItem = __uuidof(MyIcon);
     nid.uCallbackMessage = WMAPP_NOTIFYCALLBACK;
     LoadIconMetric(hMyInst, MAKEINTRESOURCE(IDI_STARTER), LIM_SMALL, &nid.hIcon);
     wcscpy(nid.szTip, AppName);
@@ -242,14 +238,11 @@ bool createTrayIcon() {
 }
 
 BOOL DeleteNotificationIcon() {
-    NOTIFYICONDATA nid = { sizeof(nid) };
-    nid.uFlags = NIF_GUID;
-    nid.guidItem = __uuidof(MyIcon);
+    NOTIFYICONDATA nid = { 0 };
+    nid.cbSize = sizeof(nid);
+    nid.hWnd = hMainWnd;
     return Shell_NotifyIcon(NIM_DELETE, &nid);
 }
-
-#include <dbghelp.h>
-#pragma comment(lib, "Dbghelp.lib")
 
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int) {
     if (isPrevInstanceRunning()) {
@@ -273,7 +266,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int) {
 
     if (!prepareModulesList()) {
         DeleteNotificationIcon();
-        MessageBox(0, L"Не удалось создать список загрузки модулей", AppName, MB_OK);
+        MessageBox(0, L"Не удалось создать список загрузки модулей. Нечего загружать.", AppName, MB_OK);
         return 1;
     }
     inject_hook();
