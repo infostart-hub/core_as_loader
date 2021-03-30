@@ -59,7 +59,7 @@ void testNeedLoad() {
         fileName--;
 
     // Загружаемая библиотека Core.As и функции в ней
-    typedef CoreAsModule* (*CORE_AS_INIT)(const wchar_t*);
+    typedef CoreAsModule* (*CORE_AS_INIT)(const wchar_t*, const wchar_t*);
     HINSTANCE hCoreAs = nullptr;
     CORE_AS_INIT coreInit = nullptr;
 
@@ -126,7 +126,7 @@ void testNeedLoad() {
             if (!coreInit)
                 goto err;
         }
-        CoreAsModule* coreModule = coreInit(moduleName);
+        CoreAsModule* coreModule = coreInit(moduleName, nullptr);
         if (coreModule) {
             unsigned hProcess = (unsigned) (size_t) OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, GetCurrentProcessId());
             coreModule->setParam(L"StarterWnd", reinterpret_cast<uint64_t>(hStarterWnd));

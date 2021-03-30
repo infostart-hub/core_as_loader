@@ -79,5 +79,5 @@ struct LibInitInterface {
     virtual void addDefine(const char* define) = 0;
 };
 
-extern "C" COREAS_API CoreAsModule* core_as_getModule(const wchar_t* moduleName);
+extern "C" COREAS_API CoreAsModule* core_as_getModule(const wchar_t* moduleName, const wchar_t* moduleFolder = nullptr);
 COREAS_API vector<ssw> core_as_parseArguments(ssw args);

@@ -32,6 +32,7 @@ check <ИмяМодуля> [параметры]    - Проверка модул
 api   <ИмяМодуля> [параметры]    - Вывод API модуля
 
 Параметры передаются запускаемому модулю в виде:
+Параметр /f - задаёт папку с модулем
 Каждый аргумент '/d строка' или '-d строка' передается как определение
 для препроцессора модуля, например:
 /d IDE=1 /d USECOOLFEATURE -D "POWER = 100"
@@ -56,7 +57,7 @@ runner run sendfile /c -subj "Мой корабль плывёт как ""Тит
 // закрывающей кавычкой "проглатывает" её и прихватывает соседние аргументы. Это, во-первых, отличается
 // от поведения моих разборщиков командной строки в других частях программы, во-вторых, делает неудобным
 // передачу директорий в командной строке. Поэтому будем разбирать командную строку сами.
-void processArgs(lstringw<300>& defines, lstringw<300>& commands) {
+void processArgs(lstringw<300>& defines, lstringw<300>& commands, lstringw<MAX_PATH>& folder) {
     vector<ssw> argv = core_as_parseArguments(e_s(GetCommandLine()));
     uint argc = uint(argv.size());
     vector<ssw> vdef, vcmd;
@@ -67,6 +68,8 @@ void processArgs(lstringw<300>& defines, lstringw<300>& commands) {
     for (uint i = 3; i < argc - 1; i++) {
         if (argv[i].isEqualia(L"/d") || argv[i].isEqualia(L"-d"))
             vdef.emplace_back(argv[++i]);
+        else if (argv[i].isEqualia(L"/f") || argv[i].isEqualia(L"-f"))
+            folder = argv[++i];
         else if (argv[i].isEqualia(L"/c") || argv[i].isEqualia(L"-c")) {
             while (++i < argc)
                 vcmd.emplace_back(argv[i]);
@@ -77,29 +80,32 @@ void processArgs(lstringw<300>& defines, lstringw<300>& commands) {
 }
 
 int run(int argc, const wchar_t* argv[]) {
-    CoreAsModule* pModule = core_as_getModule(argv[2]);
+    lstringw<300> defines, commands;
+    lstringw<MAX_PATH> folder;
+    processArgs(defines, commands, folder);
+    CoreAsModule* pModule = core_as_getModule(argv[2], folder);
     if (!pModule)
         return 2;
-    lstringw<300> defines, commands;
-    processArgs(defines, commands);
     return pModule->run(commands, defines, GetStdHandle(STD_OUTPUT_HANDLE)) ? 0 : 1;
 }
 
 int check(int argc, const wchar_t* argv[]) {
-    CoreAsModule* pModule = core_as_getModule(argv[2]);
+    lstringw<300> defines, commands;
+    lstringw<MAX_PATH> folder;
+    processArgs(defines, commands, folder);
+    CoreAsModule* pModule = core_as_getModule(argv[2], folder);
     if (!pModule)
         return 2;
-    lstringw<300> defines, commands;
-    processArgs(defines, commands);
     return pModule->check(defines, GetStdHandle(STD_OUTPUT_HANDLE)) ? 0 : 1;
 }
 
 int api(int argc, const wchar_t* argv[]) {
-    CoreAsModule* pModule = core_as_getModule(argv[2]);
+    lstringw<300> defines, commands;
+    lstringw<MAX_PATH> folder;
+    processArgs(defines, commands, folder);
+    CoreAsModule* pModule = core_as_getModule(argv[2], folder);
     if (!pModule)
         return 2;
-    lstringw<300> defines, commands;
-    processArgs(defines, commands);
     return pModule->dumpApi(defines, GetStdHandle(STD_OUTPUT_HANDLE)) ? 0 : 1;
 }
 

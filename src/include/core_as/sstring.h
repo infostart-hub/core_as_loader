@@ -617,15 +617,15 @@ constexpr static auto operator & (const strexpr<A>& a, const SimpleStr<typename 
 }
 
 constexpr static auto operator "" _ss(const u8symbol* p, size_t l) {
-    return SimpleStr<u8symbol>{p, static_cast<uint>(l) };
+    return SimpleStrNt<u8symbol>{p, static_cast<uint>(l) };
 }
 
 constexpr static auto operator "" _ss(const u16symbol* p, size_t l) {
-    return SimpleStr<u16symbol>{p, static_cast<uint>(l) };
+    return SimpleStrNt<u16symbol>{p, static_cast<uint>(l) };
 }
 
 constexpr static auto operator "" _ss(const u32symbol* p, size_t l) {
-    return SimpleStr<u32symbol>{p, static_cast<uint>(l) };
+    return SimpleStrNt<u32symbol>{p, static_cast<uint>(l) };
 }
 
 template<typename K>

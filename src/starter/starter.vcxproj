@@ -161,6 +161,12 @@ exit 0
 exit 0
 </Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>if exist "$(SolutionDir)..\sign.cmd" call "$(SolutionDir)..\sign.cmd" $(TargetPath)</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Signing...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
