@@ -271,9 +271,10 @@ public:
 
     // Сравнение ascii строк без учёта регистра
     int compareia(SimpleStr text) const noexcept {
-        if (!text.length())
+        uint otherLen = text.length();
+        if (!otherLen)
             return _isEmpty() ? 0 : 1;
-        uint myLen = _len(), checkLen = min(myLen, text.length());
+        uint myLen = _len(), checkLen = min(myLen, otherLen);
         const uns_type* ptr1 = reinterpret_cast<const uns_type*>(_str()), * ptr2 = reinterpret_cast<const uns_type*>(text.c_str());
         while (checkLen--) {
             uns_type s1 = *ptr1++, s2 = *ptr2++;
@@ -286,11 +287,11 @@ public:
             else if (s1 < s2)
                 return -1;
         }
-        return myLen == text.length() ? 0 : myLen > text.length() ? 1 : -1;
+        return myLen == otherLen ? 0 : myLen > otherLen ? 1 : -1;
     }
 
     bool isEqualia(SimpleStr text) const noexcept {
-        return text.length() == _len() && (text.length() == 0 || compareia(text) == 0);
+        return text.length() == _len() && compareia(text) == 0;
     }
 
     bool isLessia(SimpleStr text) const noexcept {
@@ -304,7 +305,7 @@ public:
     }
 
     bool isEqualiu(SimpleStr text) const noexcept {
-        return text.length() == _len() && (text.length() == 0 || compareiu(text) == 0);
+        return text.length() == _len() && compareiu(text) == 0;
     }
 
     bool isLessiu(SimpleStr text) const noexcept {
@@ -1671,7 +1672,7 @@ template<typename K, uint N, bool forShared = false> struct expr_lstr;
 * При этом, если планируется потом результат переместить в sstring, то для динамического буфера
 * выделяется +8 байтов, чтобы потом не двигать данные.
 * Так как у класса несколько базовых классов, ms компилятор не применяет автоматом empty base optimization,
-* и без явного указания - вставит в начало класса пустые байты, сдвинув поле size на 4 байте.
+* и без явного указания - вставит в начало класса пустые байты, сдвинув поле size на 4 байта.
 * Укажем ему явно
 */
 template<typename K, uint N, bool forShared = false>
@@ -1770,11 +1771,7 @@ public:
             traits::copy(reserve(len), other.c_str(), len + 1);
     }
 
-    template<typename Op, enable_if_t<is_invocable_v<Op, K*, uint>, int> = 0>
-    lstring(const Op& op) {
-        this->operator<<(op);
-    }
-    template<typename Op, enable_if_t<is_invocable_v<Op, my_type&>, int> = 0>
+    template<typename Op, enable_if_t<is_invocable_v<Op, K*, uint> || is_invocable_v<Op, my_type&>, int> = 0>
     lstring(const Op& op) {
         this->operator<<(op);
     }
@@ -2367,7 +2364,6 @@ constexpr auto indexSequenceReverse(index_sequence<Is...> const&) -> decltype(st
 template <size_t N>
 using makeIndexSequenceReverse = decltype(indexSequenceReverse(make_index_sequence<N>{}));
 
-
 template<typename K>
 static size_t fnv_hash(const K* ptr, uint l) {
     size_t h = _FNV_offset_basis;
@@ -2644,4 +2640,4 @@ using hashStrMapUIU = hashStrMap<u32symbol, T, strhashiu<u32symbol>, streqliu<u3
 
 static_assert(sizeof(sstring<u8symbol>) == sizeof(u8symbol*));
 
-constexpr const SimpleStr<u8symbol> utf8_bom{ "\xEF\xBB\xBF", 3};
+constexpr const SimpleStrNt<u8symbol> utf8_bom{ "\xEF\xBB\xBF", 3};

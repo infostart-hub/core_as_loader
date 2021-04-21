@@ -5,4 +5,3 @@ int main(array<string>&& args) {
 """);
 	return 0;
 }
-
