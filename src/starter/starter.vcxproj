@@ -79,6 +79,7 @@
     <IntDir>$(SolutionDir)_build\objs\$(Configuration)\$(PlatformTarget)\$(ProjectName)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.exe</TargetExt>
+    <ExecutablePath>C:\Projects\snegopatrb\_build\Core.As\Release\lib\x86;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -86,6 +87,7 @@
     <IntDir>$(SolutionDir)_build\objs\$(Configuration)\$(PlatformTarget)\$(ProjectName)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.exe</TargetExt>
+    <ExecutablePath>C:\Projects\snegopatrb\_build\Core.As\Release\lib\x86;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -121,10 +123,21 @@
       <DelayLoadDLLs>core_as.dll;inject.dll</DelayLoadDLLs>
     </Link>
     <PreBuildEvent>
-      <Command>robocopy ..\modules\starter "$(OutDir)modules\starter" /mir /im /NJH /NJS /NP&gt;nul
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>robocopy ..\modules\starter "$(OutDir)modules\starter" /mir /im /NJH /NJS /NP
+runner check starter
 exit 0
 </Command>
-    </PreBuildEvent>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Копируем скрипты...</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>aa</Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -157,9 +170,8 @@ exit 0
       <DelayLoadDLLs>core_as.dll;inject.dll</DelayLoadDLLs>
     </Link>
     <PreBuildEvent>
-      <Command>robocopy ..\modules\starter "$(OutDir)modules\starter" /mir /im /NJH /NJS /NP&gt;nul
-exit 0
-</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <PostBuildEvent>
       <Command>if exist "$(SolutionDir)..\sign.cmd" call "$(SolutionDir)..\sign.cmd" $(TargetPath)</Command>
@@ -167,6 +179,18 @@ exit 0
     <PostBuildEvent>
       <Message>Signing...</Message>
     </PostBuildEvent>
+    <CustomBuildStep>
+      <Command>robocopy ..\modules\starter "$(OutDir)modules\starter" /mir /im /NJH /NJS /NP
+runner check starter
+exit 0
+</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Копируем скрипты...</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>aa</Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -241,6 +265,7 @@ exit 0
     <Image Include="starter.ico" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\modules\starter\src\ipc\ipc.as" />
     <None Include="..\modules\starter\src\main.as" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

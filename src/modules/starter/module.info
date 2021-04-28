@@ -1,0 +1,7 @@
+; (c) проект "Core.As", Александр Орефков orefkov@gmail.com
+; Файл описания модуля для Core.As
+
+[info]
+descr = Загрузчик модулей Core.As в запускаемые процессы
+src = src,src\ipc
+lib = .|starter.exe

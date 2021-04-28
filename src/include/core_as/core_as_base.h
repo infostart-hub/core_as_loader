@@ -23,3 +23,4 @@ enum class LogLevel {
 COREAS_API void* core_as_malloc(size_t count);
 COREAS_API void* core_as_realloc(void* ptr, size_t count);
 COREAS_API void core_as_free(void* ptr);
+COREAS_API void core_as_print(const wchar_t* text);

@@ -169,6 +169,13 @@ public:
         return ptr;
     }
 
+    void copy_to(K* buffer, uint bufSize) {
+        uint tlen = min(_len(), bufSize - 1);
+        if (tlen)
+            traits::copy(buffer, _str(), tlen);
+        buffer[tlen] = 0;
+    }
+
     // Чтобы быть источником строкового объекта
     constexpr operator SimpleStr() const noexcept {
         return SimpleStr{ _str(), _len() };

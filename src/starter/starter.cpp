@@ -12,6 +12,7 @@ HWND hMainWnd;
 // Сюда будем писать команды для x64 инжектора - снять хук/установить хук
 HANDLE h64Write = nullptr;
 const wchar_t szWindowClass[] = L"Core.As.Starter";
+bool isInjected = false;
 
 /*
 * Назначение программы:
@@ -47,7 +48,7 @@ bool isPrevInstanceRunning() {
 }
 
 void getMyFolder() {
-    wchar_t path[MAX_PATH], * ptr = path + GetModuleFileName(hMyInst, path, MAX_PATH);
+    wchar_t path[MAX_PATH], *ptr = path + GetModuleFileName(hMyInst, path, MAX_PATH);
     while (*--ptr != '\\');
     myFolder = ssw{ path, static_cast<unsigned>(ptr + 1 - path) };
 }
@@ -121,21 +122,130 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
 void showContextMenu(POINT pt) {
     HMENU menu = LoadMenu(hMyInst, MAKEINTRESOURCE(IDC_STARTER));
     HMENU hPopup = GetSubMenu(menu, 0);
+    ModifyMenu(hPopup, ID_TOGGLE_INJECT, MF_BYCOMMAND | MF_STRING, ID_TOGGLE_INJECT, isInjected ? L"Приостановить" : L"Возобновить");
     TrackPopupMenuEx(hPopup, 0, pt.x, pt.y, hMainWnd, NULL);
 }
 
-bool showNotify(const wchar_t* msg) {
-    NOTIFYICONDATA nid = { sizeof(nid) };
-    nid.uFlags = NIF_INFO | NIF_GUID;
+bool showNotify(ssw title, ssw msg) {
+    NOTIFYICONDATA nid = { 0 };
+    nid.cbSize = sizeof(nid);
+    nid.hWnd = hMainWnd;
+    nid.uFlags = NIF_INFO | NIF_SHOWTIP;
     nid.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON | NIIF_NOSOUND;
-    wcscpy(nid.szInfoTitle, AppName);
-    wcscpy(nid.szInfo, msg);
+    if (title.isEmpty())
+        title = e_s(AppName);
+    title.copy_to(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]));
+    msg.copy_to(nid.szInfo, sizeof(nid.szInfo) / sizeof(nid.szInfo[0]));
+
     LoadIconMetric(hMyInst, MAKEINTRESOURCE(IDI_STARTER), LIM_LARGE, &nid.hBalloonIcon);
     return Shell_NotifyIcon(NIM_MODIFY, &nid);
 }
 
+enum StarterMessages {
+    smLoadModule,    // Посылается из inject.dll
+    smConnect,       // Подключение модуля к стартеру, регистрирует его для посылки обратных сообщений
+    smDisconnect,    // Отключение модуля от стартера
+    smShowNotify,    // Показать уведомление
+    smStopInject,    // Команда приостановить внедрение модулей в запускаемые процессы
+    smResumeInject,  // Команда возобновить внедрение модулей в запускаемые процессы
+    smBrodcast,      // Разослать сообщение другим запущенным модулям
+};
+
+struct ConnectedInstance {
+    HWND hWnd;
+    stringw name;
+};
+
+vector<ConnectedInstance> connectedInstances;
+
+// Ждем строку вида ИмяИнстанса\vHWND окна
+void processConnect(SimpleStrNtW msg) {
+    auto parts = msg.split<vector<ssw>>(L"\v"_ss);
+    if (parts.size() == 2) {
+        HWND hWnd = (HWND)wcstol(parts[1].c_str(), nullptr, 0);
+        if (IsWindow(hWnd))
+            connectedInstances.emplace_back(ConnectedInstance{ hWnd, parts[0] });
+    }
+}
+
+// Ждем строку вида HWND окна
+void processDisconnect(SimpleStrNtW msg) {
+    HWND hWnd = (HWND)wcstol(msg, nullptr, 0);
+    const auto fnd = std::find_if(connectedInstances.begin(), connectedInstances.end(), [=](const ConnectedInstance& c) {return c.hWnd == hWnd; });
+    if (fnd != connectedInstances.end())
+        connectedInstances.erase(fnd);
+}
+
+// Ждем строку вида Заголовок\vТекст
+void processShowNotify(SimpleStrNtW msg) {
+    // Данные для показа уведомления идут в виде Заголовок\vТекст
+    auto txt = msg.split<vector<ssw>>(L"\v"_ss);
+    if (txt.size() == 2)
+        showNotify(txt[0], txt[1]);
+}
+
+void processBroadCast(SimpleStrNtW data) {
+    for (auto it = connectedInstances.begin(); it != connectedInstances.end(); ) {
+        if (!IsWindow(it->hWnd)) {
+            connectedInstances.erase(it);
+        } else {
+            SendMessage(it->hWnd, WM_SETTEXT, 0, (LPARAM) data.c_str());
+            ++it;
+        }
+    }
+}
+
+void processStopInject() {
+    if (isInjected) {
+        inject_unhook();
+        if (h64Write) {
+            char cmd = icUnhook;
+            WriteFile(h64Write, &cmd, 1, 0, 0);
+        }
+        isInjected = false;
+        processBroadCast(lstringw<100>(+L"starter\v"_ss & (size_t)hMainWnd & L"\vinject=0"));
+    }
+}
+
+void processResumeInject() {
+    if (!isInjected) {
+        inject_hook();
+        if (h64Write) {
+            char cmd = icHook;
+            WriteFile(h64Write, &cmd, 1, 0, 0);
+        }
+        isInjected = true;
+        processBroadCast(lstringw<100>(+L"starter\v"_ss & (size_t) hMainWnd & L"\vinject=1"));
+    }
+}
+
 void processMsgFromOther(const wchar_t* msg) {
-    //showNotify(msg);
+    wchar_t* end;
+    long cmd = wcstol(msg, &end, 0);
+    if (*end == ' ')
+        ++end;
+    switch (cmd) 	{
+    case smLoadModule:
+        break;
+    case smConnect:
+        processConnect(e_s(end));
+        break;
+    case smDisconnect:
+        processDisconnect(e_s(end));
+        break;
+    case smShowNotify:
+        processShowNotify(e_s(end));
+        break;
+    case smStopInject:
+        processStopInject();
+        break;
+    case smResumeInject:
+        processResumeInject();
+        break;
+    case smBrodcast:
+        processBroadCast(e_s(end));
+        break;
+    }
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -154,6 +264,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         case IDM_EXIT:
             DestroyWindow(hWnd);
             break;
+        case ID_TOGGLE_INJECT:
+            if (isInjected)
+                processStopInject();
+            else
+                processResumeInject();
+            break;
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
@@ -161,9 +277,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     break;
     case WMAPP_NOTIFYCALLBACK:
         switch (LOWORD(lParam)) {
-        /*case NIN_SELECT:
-            ShowWindow(hMainWnd, SW_SHOW);
-            break;*/
         case WM_CONTEXTMENU: {
             POINT const pt = { LOWORD(wParam), HIWORD(wParam) };
             showContextMenu(pt);
@@ -224,7 +337,7 @@ bool createTrayIcon() {
     NOTIFYICONDATA nid = {0};
     nid.cbSize = sizeof(nid);
     nid.hWnd = hMainWnd;
-    nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP;
+    nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE;
     nid.uCallbackMessage = WMAPP_NOTIFYCALLBACK;
     LoadIconMetric(hMyInst, MAKEINTRESOURCE(IDI_STARTER), LIM_SMALL, &nid.hIcon);
     wcscpy(nid.szTip, AppName);
@@ -269,6 +382,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int) {
         MessageBox(0, L"Не удалось создать список загрузки модулей. Нечего загружать.", AppName, MB_OK);
         return 1;
     }
+    isInjected = true;
     inject_hook();
     startInject64();
 
@@ -280,4 +394,16 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int) {
     }
     DeleteNotificationIcon();
     return (int) msg.wParam;
+}
+
+extern "C" __declspec(dllexport)
+bool moduleInit(LibInitInterface* li, CoreAsModule* module, bool forCheck) {
+    /*
+    asEngine = li->getAsEngine();
+    AsRegister::registerAll(AsInitLevel::typeNames, false);
+    AsRegister::registerAll(AsInitLevel::enumVals, false);
+    AsRegister::registerAll(AsInitLevel::ctors, false);
+    AsRegister::registerAll(AsInitLevel::typeMembers, false);
+    */
+    return true;
 }
