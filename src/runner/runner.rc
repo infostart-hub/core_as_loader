@@ -50,9 +50,9 @@ END
 // Version
 //
 
-VS_VERSION_INFO1 VERSIONINFO
- FILEVERSION 1,0,0,3
- PRODUCTVERSION 1,0,0,3
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,5
+ PRODUCTVERSION 1,0,0,5
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -69,12 +69,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Александр Орефков"
             VALUE "FileDescription", "Консольный стартер Core.As"
-            VALUE "FileVersion", "1.0.0.3"
+            VALUE "FileVersion", "1.0.0.5"
             VALUE "InternalName", "runner.exe"
             VALUE "LegalCopyright", "(c) Александр Орефков 2020"
             VALUE "OriginalFilename", "runner.exe"
             VALUE "ProductName", "Проект ""Core.As"""
-            VALUE "ProductVersion", "1.0.0.3"
+            VALUE "ProductVersion", "1.0.0.5"
         END
     END
     BLOCK "VarFileInfo"
