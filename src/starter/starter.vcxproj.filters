@@ -37,6 +37,9 @@
     <ClInclude Include="modules_list.h">
       <Filter>01 Основные</Filter>
     </ClInclude>
+    <ClInclude Include="VersionInfo.h">
+      <Filter>03 Прочее</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="starter.cpp">
@@ -50,6 +53,9 @@
     </ClCompile>
     <ClCompile Include="delay.cpp">
       <Filter>01 Основные</Filter>
+    </ClCompile>
+    <ClCompile Include="VersionInfo.cpp">
+      <Filter>03 Прочее</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

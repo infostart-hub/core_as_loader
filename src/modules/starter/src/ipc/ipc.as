@@ -16,6 +16,7 @@ const string StarterWindowClassName = "Core.As.Starter";
 
 // Коды видов сообщений
 enum StarterMessages {
+    smInject,        // Посылается при загрузке inject.dll в процесс, передает описатель потока
     smLoadModule,    // Посылается из inject.dll
     smConnect,       // Подключение модуля к стартеру, регистрирует его для посылки обратных сообщений
     smDisconnect,    // Отключение модуля от стартера

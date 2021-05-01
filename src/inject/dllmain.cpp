@@ -26,10 +26,6 @@ void getMyFolder(wchar_t* folder) {
 
 // Функция загружает в процесс модули Core.As в случае если это задано в настройках
 void testNeedLoad() {
-    // После приостановки и возобновлении подгрузки функция может вызываться для процесса,
-    // в который уже загружены модули. Если это так, то ничего не делаем.
-    if (GetModuleHandle(L"core_as.dll"))
-        return;
     // При запуске стартера он готовит данные о загружаемых модулях и размещает их в shared memory
     // Сейчас мы их получим
     HANDLE hMemory = OpenFileMapping(FILE_MAP_READ, FALSE, LOAD_LIST_MEM_NAME);
@@ -52,6 +48,20 @@ void testNeedLoad() {
     }
     // Затем хэндл окна стартера
     HWND hStarterWnd = reinterpret_cast<HWND>((size_t)*(unsigned*) (data + 4));
+    // При первом вызове надо передать в стартер описатель потока, чтобы при выключении
+    // он послал в него пустое сообщение, чтобы наша dll выгрузилась.
+    {
+        wchar_t buf[101];
+        swprintf(buf, 100, L"0 %d", GetCurrentThreadId());
+        SendMessage(hStarterWnd, WM_SETTEXT, 0, (LPARAM) buf);
+    }
+
+
+    // После приостановки и возобновлении подгрузки функция может вызываться для процесса,
+    // в который уже загружены модули. Если это так, то ничего не делаем.
+    if (GetModuleHandle(L"core_as.dll"))
+        return;
+
     // Затем идет количество проверяемых модулей
     unsigned modulesCount = *(unsigned*) (data + 8);
     // Получим путь к нашей папке
@@ -139,7 +149,7 @@ void testNeedLoad() {
             const wchar_t* defs = modul->defines? (const wchar_t*) (data + modul->defines) : nullptr;
             if (coreModule->run(args, defs)) {
                 wchar_t buf[301];
-                swprintf(buf, 300, L"0 %d \"%s\" %s", hProcess, fileName, moduleName);
+                swprintf(buf, 300, L"1 %d \"%s\" %s", hProcess, fileName, moduleName);
                 SendMessage(hStarterWnd, WM_SETTEXT, 0, (LPARAM)buf);
             }
         }

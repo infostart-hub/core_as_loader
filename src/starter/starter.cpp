@@ -6,6 +6,7 @@
 #include "pch.h"
 #include "starter.h"
 #include "modules_list.h"
+#include "VersionInfo.h"
 
 UINT const WMAPP_NOTIFYCALLBACK = WM_APP + 1;
 HWND hMainWnd;
@@ -106,9 +107,13 @@ void startInject64() {
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     UNREFERENCED_PARAMETER(lParam);
     switch (message) {
-    case WM_INITDIALOG:
+    case WM_INITDIALOG: {
+        uint64_t version = VersionInfo(hMyInst, FALSE).prodVersion();
+        SetDlgItemText(hDlg, IDC_VERSION, lstringw<100>().s_format(L"%i.%i.%i.%i",
+            uint(version >> 48), uint((version>> 32) & 0xFFFF),
+            uint((version>> 16) & 0xFFFF), uint(version & 0xFFFF)));
         return (INT_PTR) TRUE;
-
+    }
     case WM_COMMAND:
         if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
             EndDialog(hDlg, LOWORD(wParam));
@@ -142,6 +147,7 @@ bool showNotify(ssw title, ssw msg) {
 }
 
 enum StarterMessages {
+    smInject,        // Посылается при загрузке inject.dll в процесс, передает описатель потока
     smLoadModule,    // Посылается из inject.dll
     smConnect,       // Подключение модуля к стартеру, регистрирует его для посылки обратных сообщений
     smDisconnect,    // Отключение модуля от стартера
@@ -157,6 +163,12 @@ struct ConnectedInstance {
 };
 
 vector<ConnectedInstance> connectedInstances;
+vector<DWORD> injectThreads;
+
+// Ждем строку вида ThreadID
+void processInject(SimpleStrNtW msg) {
+    injectThreads.push_back(wcstoul(msg, nullptr, 0));
+}
 
 // Ждем строку вида ИмяИнстанса\vHWND окна
 void processConnect(SimpleStrNtW msg) {
@@ -204,6 +216,13 @@ void processStopInject() {
         }
         isInjected = false;
         processBroadCast(lstringw<100>(+L"starter\v"_ss & (size_t)hMainWnd & L"\vinject=0"));
+        // При снятии хука inject.dll выгружается из других процессов не сразу, а когда
+        // через очередь сообщений потока с хуком пройдёт хотя бы одно сообщение.
+        // И для некоторых процессов это ожидание может сильно затянутся. Поэтому при снятии хука
+        // надо в каждый поток с inject.dll послать пустое сообщение.
+        for (auto threadId: injectThreads)
+            PostThreadMessage(threadId, WM_NULL, 0, 0);
+        injectThreads.clear();
     }
 }
 
@@ -225,6 +244,9 @@ void processMsgFromOther(const wchar_t* msg) {
     if (*end == ' ')
         ++end;
     switch (cmd) 	{
+    case smInject:
+        processInject(e_s(end));
+        break;
     case smLoadModule:
         break;
     case smConnect:
@@ -393,6 +415,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int) {
         DispatchMessage(&msg);
     }
     DeleteNotificationIcon();
+    processStopInject();
     return (int) msg.wParam;
 }
 
