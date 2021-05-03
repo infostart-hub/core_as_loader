@@ -394,6 +394,18 @@ public:
             return false;
         return !myLen || 0 == traits::compare(text.c_str(), _str(), myLen);
     }
+    // Заканчивается ли строка указанной подстрокой
+    bool isSuffixed(SimpleStr suffix) {
+        return suffix.length() <= _len() && (suffix.length() == 0 || (*this)(-int(suffix.length())).isEqual(suffix));
+    }
+    // Заканчивается ли строка указанной подстрокой без учета регистра ASCII
+    bool isSuffixedia(SimpleStr suffix) {
+        return suffix.length() <= _len() && (suffix.length() == 0 || (*this)(-int(suffix.length())).isEqualia(suffix));
+    }
+    // Заканчивается ли строка указанной подстрокой без учета регистра UNICODE
+    bool isSuffixediu(SimpleStr suffix) {
+        return suffix.length() <= _len() && (suffix.length() == 0 || (*this)(-int(suffix.length())).isEqualiu(suffix));
+    }
 
     bool isAscii() const noexcept {
         if (_isEmpty())

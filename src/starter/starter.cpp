@@ -238,25 +238,31 @@ void processResumeInject() {
     }
 }
 
+void processLoadModule(ssw msg) {
+    coreModule->log<LogLevel::Info>(+L"Load module "_ss & msg);
+}
+
 void processMsgFromOther(const wchar_t* msg) {
     wchar_t* end;
     long cmd = wcstol(msg, &end, 0);
     if (*end == ' ')
         ++end;
+    SimpleStrNtW tail = e_s(end);
     switch (cmd) 	{
     case smInject:
-        processInject(e_s(end));
+        processInject(tail);
         break;
     case smLoadModule:
+        processLoadModule(tail);
         break;
     case smConnect:
-        processConnect(e_s(end));
+        processConnect(tail);
         break;
     case smDisconnect:
-        processDisconnect(e_s(end));
+        processDisconnect(tail);
         break;
     case smShowNotify:
-        processShowNotify(e_s(end));
+        processShowNotify(tail);
         break;
     case smStopInject:
         processStopInject();
@@ -265,7 +271,7 @@ void processMsgFromOther(const wchar_t* msg) {
         processResumeInject();
         break;
     case smBrodcast:
-        processBroadCast(e_s(end));
+        processBroadCast(tail);
         break;
     }
 }
