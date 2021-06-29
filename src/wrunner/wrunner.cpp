@@ -1,6 +1,6 @@
 ﻿/*
 * (c) Проект "Core.As", Александр Орефков orefkov@gmail.com
-* Отдельно выполняемый консольный запускальщик модулей Core.As
+* Отдельно выполняемый gui запускальщик модулей Core.As
 * 
 */
 //#define WIN32_LEAN_AND_MEAN
@@ -25,11 +25,10 @@ void operator delete(void* ptr) {
 }
 
 int showUsage() {
-    wprintf(LR"aaa(Core.As Runner. Программа для запуска модулей Core.As.
+    MessageBox(0, LR"aaa(Core.As Runner. Программа для запуска модулей Core.As.
 Используйте одну из команд:
 run   <ИмяМодуля> [параметры]    - Запуск модуля
 check <ИмяМодуля> [параметры]    - Проверка модуля
-api   <ИмяМодуля> [параметры]    - Вывод API модуля
 
 Параметры передаются запускаемому модулю в виде:
 Параметр /f - задаёт папку с модулем
@@ -41,14 +40,13 @@ api   <ИмяМодуля> [параметры]    - Вывод API модуля
 
 Параметры с пробелами заключайте в кавычки. Кавычки внутри параметров удваивайте.
 Например:
-coreas_runner_c run sendfile /c -subj "Мой корабль плывёт как ""Титаник"""
+coreas_runner_w run sendfile /c -subj "Мой корабль плывёт как ""Титаник"""
 
 Также модуль может сам получать дополнительные настройки из переменных окружения
 вида COREAS_ИмяНастройки=значение настройки
 и аргументов командной строки вида -coreas-ИмяНастройки "значение настройки"
 Имена настроек регистронезависимые.
-
-)aaa");
+)aaa", L"Core.As", MB_OK);
 
     return 1;
 }
@@ -57,8 +55,7 @@ coreas_runner_c run sendfile /c -subj "Мой корабль плывёт как
 // закрывающей кавычкой "проглатывает" её и прихватывает соседние аргументы. Это, во-первых, отличается
 // от поведения моих разборщиков командной строки в других частях программы, во-вторых, делает неудобным
 // передачу директорий в командной строке. Поэтому будем разбирать командную строку сами.
-void processArgs(lstringw<300>& defines, lstringw<300>& commands, lstringw<MAX_PATH>& folder) {
-    vector<ssw> argv = core_as_parseArguments(e_s(GetCommandLine()));
+void processArgs(lstringw<300>& defines, lstringw<300>& commands, lstringw<MAX_PATH>& folder, const vector<ssw>& argv) {
     uint argc = uint(argv.size());
     vector<ssw> vdef, vcmd;
     if (argc > 4) {
@@ -79,48 +76,37 @@ void processArgs(lstringw<300>& defines, lstringw<300>& commands, lstringw<MAX_P
     commands.s_join(vcmd, L"\v").s_replace(L"\"\"", L"\"");
 }
 
-int run(int argc, const wchar_t* argv[]) {
+int run(const vector<ssw>& argv, HINSTANCE hInst, int nCmdShow) {
     lstringw<300> defines, commands;
     lstringw<MAX_PATH> folder;
-    processArgs(defines, commands, folder);
-    CoreAsModule* pModule = core_as_getModule(argv[2], folder);
+    processArgs(defines, commands, folder, argv);
+    lstringw<MAX_PATH> modName(argv[2]);
+    CoreAsModule* pModule = core_as_getModule(modName, folder);
     if (!pModule)
         return 2;
+    commands.s_append(+L" hInst "_ss & size_t(hInst) & L" nCmdShow " & nCmdShow);
     return pModule->run(commands, defines, GetStdHandle(STD_OUTPUT_HANDLE)) ? 0 : 1;
 }
 
-int check(int argc, const wchar_t* argv[]) {
+int check(const vector<ssw>& argv) {
     lstringw<300> defines, commands;
     lstringw<MAX_PATH> folder;
-    processArgs(defines, commands, folder);
-    CoreAsModule* pModule = core_as_getModule(argv[2], folder);
+    processArgs(defines, commands, folder, argv);
+    lstringw<MAX_PATH> modName(argv[2]);
+    CoreAsModule* pModule = core_as_getModule(modName, folder);
     if (!pModule)
         return 2;
     return pModule->check(defines, GetStdHandle(STD_OUTPUT_HANDLE)) ? 0 : 1;
 }
 
-int api(int argc, const wchar_t* argv[]) {
-    lstringw<300> defines, commands;
-    lstringw<MAX_PATH> folder;
-    processArgs(defines, commands, folder);
-    CoreAsModule* pModule = core_as_getModule(argv[2], folder);
-    if (!pModule)
-        return 2;
-    return pModule->dumpApi(defines, GetStdHandle(STD_OUTPUT_HANDLE)) ? 0 : 1;
-}
-
-int wmain(int argc, const wchar_t* argv[]) {
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR lpCmdLine, int nShowCmd) {
     setlocale(LC_ALL, "ru_RU.utf8");
-    wchar_t* cmdLine = GetCommandLine();
-
-    if (argc > 2) {
-        ssw cmd = e_s(argv[1]);
-        if (cmd == L"run") {
-            return run(argc, argv);
-        } else if (cmd == L"check") {
-            return check(argc, argv);
-        } else if (cmd == L"api") {
-            return api(argc, argv);
+    vector<ssw> argv = core_as_parseArguments(e_s(lpCmdLine));
+    if (argv.size() > 2) {
+        if (argv[1] == L"run") {
+            return run(argv, hInstance, nShowCmd);
+        } else if (argv[1]== L"check") {
+            return check(argv);
         }
     }
     return showUsage();

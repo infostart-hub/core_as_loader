@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{d09f3bf2-0234-4737-b91e-53998b28ce47}</ProjectGuid>
+    <ProjectGuid>{ABF9D301-B602-4E55-A6DA-6032D0887A8B}</ProjectGuid>
     <RootNamespace>runner</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -79,7 +79,7 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)_build\$(Configuration)\lib\$(PlatformTarget)\</OutDir>
     <IntDir>$(SolutionDir)_build\objs\$(Configuration)\$(PlatformTarget)\$(ProjectName)\</IntDir>
-    <TargetName>coreas_$(ProjectName)_c</TargetName>
+    <TargetName>coreas_runner_w</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -90,7 +90,7 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)_build\$(Configuration)\lib\$(PlatformTarget)\</OutDir>
     <IntDir>$(SolutionDir)_build\objs\$(Configuration)\$(PlatformTarget)\$(ProjectName)\</IntDir>
-    <TargetName>coreas_$(ProjectName)_c</TargetName>
+    <TargetName>coreas_runner_w</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -134,7 +134,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -189,7 +189,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -203,13 +203,13 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="runner.cpp" />
+    <ClCompile Include="wrunner.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="runner.rc" />
+    <ResourceCompile Include="wrunner.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

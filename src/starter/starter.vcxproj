@@ -181,7 +181,7 @@ exit 0
     </PostBuildEvent>
     <CustomBuildStep>
       <Command>robocopy ..\modules\starter "$(OutDir)modules\starter" /mir /im /NJH /NJS /NP
-runner check starter
+coreas_runner_c check starter
 exit 0
 </Command>
     </CustomBuildStep>
