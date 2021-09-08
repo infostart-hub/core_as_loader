@@ -128,7 +128,9 @@ void showContextMenu(POINT pt) {
     HMENU menu = LoadMenu(hMyInst, MAKEINTRESOURCE(IDC_STARTER));
     HMENU hPopup = GetSubMenu(menu, 0);
     ModifyMenu(hPopup, ID_TOGGLE_INJECT, MF_BYCOMMAND | MF_STRING, ID_TOGGLE_INJECT, isInjected ? L"Приостановить" : L"Возобновить");
+    SetForegroundWindow(hMainWnd);
     TrackPopupMenuEx(hPopup, 0, pt.x, pt.y, hMainWnd, NULL);
+    DestroyMenu(menu);
 }
 
 bool showNotify(ssw title, ssw msg) {
