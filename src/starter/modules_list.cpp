@@ -31,45 +31,44 @@ struct LoadModuleInfo {
 };
 
 stringw parseArguments(ssw args) {
-    return stringw::join(core_as_parseArguments(args), L"\v").replace(L"\"\"", L"\"");
+    return stringw{ eew & e_repl(lstringw<500>::join(core_as_parseArguments(args), L"\v").to_str(), L"\"\"", L"\"") };
 }
 
 void processFile(const wchar_t* filePath, vector<LoadModuleInfo>& modules) {
-    lstringw<0x200> sectionNames;
-    lstringsw<0x200> buffer;
-    sectionNames << [filePath](wchar_t* p, unsigned s) {
+    lstringw<0x200> sectionNames{ [filePath](wchar_t* p, unsigned s) {
         return grow2(GetPrivateProfileString(NULL, NULL, NULL, p, s + 1, filePath), s - 1);
-    };
+    } };
+    lstringsw<0x200> buffer;
     
     for (const wchar_t* section = sectionNames; *section; section += char_traits<u16symbol>::length(section) + 1) {
-        buffer << [&](wchar_t* p, unsigned s) {
+        buffer << [&](wchar_t* p, uint s) {
             return grow2(GetPrivateProfileString(section, L"modul", NULL, p, s + 1, filePath), s);
         };
         if (!buffer)
             continue;
-        stringw modulName(move(buffer));
+        stringw modulName{ move(buffer) };
 
-        auto procList = (buffer << [&](wchar_t* p, unsigned s) {
+        auto procList = (buffer << [&](wchar_t* p, uint s) {
             return grow2(GetPrivateProfileString(section, L"proc", NULL, p, s + 1, filePath), s);
-            }).splitf<vector<stringw>>(L",", trim_w());
+            }).splitf<vector<stringw>>(L",", trim_w{});
         
         if (procList.empty())
             continue;
 
-        LoadModuleInfo info(move(modulName), move(procList));
+        LoadModuleInfo info{ move(modulName), move(procList) };
 
-        auto lib = (buffer << [&](wchar_t* p, unsigned s) {
+        auto lib = (buffer << [&](wchar_t* p, uint s) {
             return grow2(GetPrivateProfileString(section, L"test", NULL, p, s + 1, filePath), s);
-            }).splitf<vector<stringw>>(L",", trim_w());
+            }).splitf<vector<stringw>>(L",", trim_w{});
         if (lib.size() == 2) {
             info.testLib = move(lib[0]);
             info.testFunc = move(lib[1]);
         }
         
-        info.args = parseArguments(buffer << [&](wchar_t* p, unsigned s) {
+        info.args = parseArguments(buffer << [&](wchar_t* p, uint s) {
             return grow2(GetPrivateProfileString(section, L"args", NULL, p, s, filePath), s);
             });
-        info.defs = parseArguments(buffer << [&](wchar_t* p, unsigned s) {
+        info.defs = parseArguments(buffer << [&](wchar_t* p, uint s) {
             return grow2(GetPrivateProfileString(section, L"defs", NULL, p, s, filePath), s);
             });
         modules.emplace_back(move(info));

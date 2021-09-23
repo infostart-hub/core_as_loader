@@ -148,7 +148,7 @@ class str_algs {
 
 public:
     using symb_type = K;
-    using SimpleStr = StrRef;
+    using StrPiece = StrRef;
     using traits = char_traits<K>;
     using uni = unicode_traits<K>;
     using uns_type = make_unsigned_t<K>;
@@ -177,30 +177,30 @@ public:
     }
 
     // Чтобы быть источником строкового объекта
-    constexpr operator SimpleStr() const noexcept {
-        return SimpleStr{ _str(), _len() };
+    constexpr operator StrPiece() const noexcept {
+        return StrPiece{ _str(), _len() };
     }
-    SimpleStr to_str() const noexcept {
-        return SimpleStr{ _str(), _len() };
+    StrPiece to_str() const noexcept {
+        return StrPiece{ _str(), _len() };
     }
 
-    constexpr SimpleStr operator () (int from, int len = 0) const noexcept {
+    constexpr StrPiece operator () (int from, int len = 0) const noexcept {
         uint myLen = _len(), idxStart = from >= 0 ? from : myLen + from,
             idxEnd = (len > 0 ? from : myLen) + len;
         if (idxEnd > myLen)
             idxEnd = myLen;
         if (idxStart > idxEnd)
             idxStart = idxEnd;
-        return SimpleStr { _str() + idxStart, idxEnd - idxStart };
+        return StrPiece { _str() + idxStart, idxEnd - idxStart };
     }
-    constexpr SimpleStr mid(uint from, int len = -1) const noexcept {
+    constexpr StrPiece mid(uint from, int len = -1) const noexcept {
         uint myLen = _len(), idxStart = from,
             idxEnd = len >= 0 ? from + len : myLen;
         if (idxEnd > myLen)
             idxEnd = myLen;
         if (idxStart > idxEnd)
             idxStart = idxEnd;
-        return SimpleStr{ _str() + idxStart, idxEnd - idxStart };
+        return StrPiece{ _str() + idxStart, idxEnd - idxStart };
     }
     void store(char*& ptr) const noexcept {
         uint len = (_len() + 1) * sizeof(K);
@@ -216,7 +216,7 @@ public:
         return _str()[idx >= 0 ? idx : _len() + idx];
     }
     // Сравнение строк
-    int compare(SimpleStr o) const {
+    int compare(StrPiece o) const {
         if (!o.length())
             return _isEmpty() ? 0 : 1;
         uint myLen = _len(), checkLen = min(myLen, o.length());
@@ -224,7 +224,7 @@ public:
         return cmp == 0 ? (myLen > o.length() ? 1 : myLen == o.length() ? 0 : -1) : cmp;
     }
 
-    uint find(SimpleStr pattern, uint offset = 0) const noexcept {
+    uint find(StrPiece pattern, uint offset = 0) const noexcept {
         uint lenText = _len(), lenPattern = pattern.length();
         // Образец, не вмещающийся в строку и пустой образец не находим
         if (!lenPattern || offset + lenPattern > lenText)
@@ -259,25 +259,25 @@ public:
         return str_pos::badIdx;
     }
 
-    bool isEqual(SimpleStr other) const noexcept {
+    bool isEqual(StrPiece other) const noexcept {
         uint myLen = _len();
         return other.length() == myLen && (myLen == 0 || traits::compare(_str(), other.c_str(), myLen) == 0);
     }
 
-    bool operator == (SimpleStr other) const noexcept {
+    bool operator == (StrPiece other) const noexcept {
         return isEqual(other);
     }
 
-    bool operator != (SimpleStr other) const noexcept {
+    bool operator != (StrPiece other) const noexcept {
         return !isEqual(other);
     }
 
-    bool operator < (SimpleStr other) const {
+    bool operator < (StrPiece other) const {
         return compare(other) < 0;
     }
 
     // Сравнение ascii строк без учёта регистра
-    int compareia(SimpleStr text) const noexcept {
+    int compareia(StrPiece text) const noexcept {
         uint otherLen = text.length();
         if (!otherLen)
             return _isEmpty() ? 0 : 1;
@@ -297,25 +297,25 @@ public:
         return myLen == otherLen ? 0 : myLen > otherLen ? 1 : -1;
     }
 
-    bool isEqualia(SimpleStr text) const noexcept {
+    bool isEqualia(StrPiece text) const noexcept {
         return text.length() == _len() && compareia(text) == 0;
     }
 
-    bool isLessia(SimpleStr text) const noexcept {
+    bool isLessia(StrPiece text) const noexcept {
         return compareia(text) < 0;
     }
 
-    int compareiu(SimpleStr text) const noexcept {
+    int compareiu(StrPiece text) const noexcept {
         if (!text.length())
             return _isEmpty() ? 0 : 1;
         return uni::compareiu(_str(), _len(), text.c_str(), text.length());
     }
 
-    bool isEqualiu(SimpleStr text) const noexcept {
+    bool isEqualiu(StrPiece text) const noexcept {
         return text.length() == _len() && compareiu(text) == 0;
     }
 
-    bool isLessiu(SimpleStr text) const noexcept {
+    bool isLessiu(StrPiece text) const noexcept {
         return compareiu(text) < 0;
     }
 
@@ -326,7 +326,7 @@ public:
         return my_type(d().mid(from, len));
     }
 
-    vector<uint> find_all(SimpleStr pattern, uint offset = 0, uint maxCount = 0) const {
+    vector<uint> find_all(StrPiece pattern, uint offset = 0, uint maxCount = 0) const {
         if (!maxCount)
             maxCount--;
         vector<uint> result;
@@ -341,14 +341,14 @@ public:
     }
 
     template<typename T, typename Op>
-    T splitf(SimpleStr delimeter, const Op& beforeFunc, uint offset = 0) const {
+    T splitf(StrPiece delimeter, const Op& beforeFunc, uint offset = 0) const {
         uint mylen = _len(), lenDelimeter = delimeter.length();
         T results;
-        SimpleStr me{ _str(), _len() };
+        StrPiece me{ _str(), _len() };
         for (;;) {
             uint beginOfDelim = find(delimeter, offset);
             if (beginOfDelim == str_pos::badIdx) {
-                SimpleStr last = beforeFunc(SimpleStr{ me.c_str() + offset, me.length() - offset });
+                StrPiece last = beforeFunc(StrPiece{ me.c_str() + offset, me.length() - offset });
                 if (last.isSame(me)) {
                     // Пробуем положить весь объект
                     results.emplace_back(d());
@@ -356,7 +356,7 @@ public:
                     results.emplace_back(last);
                 break;
             }
-            results.emplace_back(beforeFunc(SimpleStr{ me.c_str() + offset, beginOfDelim - offset }));
+            results.emplace_back(beforeFunc(StrPiece{ me.c_str() + offset, beginOfDelim - offset }));
             offset = beginOfDelim + lenDelimeter;
         }
         return results;
@@ -364,46 +364,46 @@ public:
 
     // Разбиение строки на части
     template<typename T>
-    T split(SimpleStr delimeter, uint offset = 0) const {
-        return splitf<T>(delimeter, [](SimpleStr o) {return o; }, offset);
+    T split(StrPiece delimeter, uint offset = 0) const {
+        return splitf<T>(delimeter, [](StrPiece o) {return o; }, offset);
     }
 
     // Начинается ли эта строка с указанной подстроки
-    bool isPrefixed(SimpleStr prefix) const noexcept {
+    bool isPrefixed(StrPiece prefix) const noexcept {
         if (!prefix.length() || _len() < prefix.length())
             return false;
-        return 0 == prefix.compare(SimpleStr{ _str(), prefix.length() });
+        return 0 == prefix.compare(StrPiece{ _str(), prefix.length() });
     }
     // Начинается ли эта строка с указанной подстроки без учета ascii регистра
-    bool isPrefixedia(SimpleStr prefix) const noexcept {
+    bool isPrefixedia(StrPiece prefix) const noexcept {
         if (!prefix.length() || _len() < prefix.length())
             return false;
-        return 0 == prefix.compareia(SimpleStr{ _str(), prefix.length() });
+        return 0 == prefix.compareia(StrPiece{ _str(), prefix.length() });
     }
     // Начинается ли эта строка с указанной подстроки без учета unicode регистра
-    bool isPrefixediu(SimpleStr prefix) const noexcept {
+    bool isPrefixediu(StrPiece prefix) const noexcept {
         if (!prefix.length() || _len() < prefix.length())
             return false;
         return 0 == uni::compareiu(_str(), prefix.length(), prefix.c_str(), prefix.length());
     }
 
     // Является ли эта строка началом указанной строки
-    bool isPrefixIn(SimpleStr text) const noexcept {
+    bool isPrefixIn(StrPiece text) const noexcept {
         uint myLen = _len();
         if (myLen > text.length())
             return false;
         return !myLen || 0 == traits::compare(text.c_str(), _str(), myLen);
     }
     // Заканчивается ли строка указанной подстрокой
-    bool isSuffixed(SimpleStr suffix) {
+    bool isSuffixed(StrPiece suffix) {
         return suffix.length() <= _len() && (suffix.length() == 0 || (*this)(-int(suffix.length())).isEqual(suffix));
     }
     // Заканчивается ли строка указанной подстрокой без учета регистра ASCII
-    bool isSuffixedia(SimpleStr suffix) {
+    bool isSuffixedia(StrPiece suffix) {
         return suffix.length() <= _len() && (suffix.length() == 0 || (*this)(-int(suffix.length())).isEqualia(suffix));
     }
     // Заканчивается ли строка указанной подстрокой без учета регистра UNICODE
-    bool isSuffixediu(SimpleStr suffix) {
+    bool isSuffixediu(StrPiece suffix) {
         return suffix.length() <= _len() && (suffix.length() == 0 || (*this)(-int(suffix.length())).isEqualiu(suffix));
     }
 
@@ -448,7 +448,7 @@ public:
     }
 
     template<typename R = my_type>
-    R replace(SimpleStr pattern, SimpleStr repl, uint offset = 0, uint maxCount = 0) const {
+    R replace(StrPiece pattern, StrPiece repl, uint offset = 0, uint maxCount = 0) const {
         return R::replace_s(d(), pattern, repl, offset, maxCount);
     }
 
@@ -458,13 +458,13 @@ public:
     }
 
     template<typename R = my_type>
-    R& replaceTo(R& obj, SimpleStr pattern, SimpleStr repl, uint offset = 0, uint maxCount = 0) const {
+    R& replaceTo(R& obj, StrPiece pattern, StrPiece repl, uint offset = 0, uint maxCount = 0) const {
         return R::replaceTo_s(obj, d(), pattern, repl, offset, maxCount);
     }
 
     template<typename From, is_strtype_t<From, K> = 0, typename Op>
     static my_type make_trim_op(const From& from, const Op& opTrim) {
-        SimpleStr sfrom = from, newPos = opTrim(sfrom);
+        StrPiece sfrom = from, newPos = opTrim(sfrom);
         return newPos.isSame(sfrom) ? my_type{ from } : my_type{ newPos };
     }
     template<TrimSides S, typename From, is_strtype_t<From, K> = 0>
@@ -478,7 +478,7 @@ public:
     }
 
     template<TrimSides S, bool withSpaces, typename From, is_strtype_t<From, K> = 0>
-    static my_type trim_static(const From& from, SimpleStr pattern) {
+    static my_type trim_static(const From& from, StrPiece pattern) {
         return make_trim_op(from, trimOperator<S, K, 0, withSpaces> { pattern});
     }
     // Триминг по пробельным символам - ' ', \t\n\v\f\r
@@ -522,28 +522,28 @@ public:
     }
     // Триминг по динамическому источнику
     template<typename R = my_type>
-    R trim(SimpleStr pattern) const {
+    R trim(StrPiece pattern) const {
         return R::trim_static<TrimSides::trimAll, false>(d(), pattern);
     }
     template<typename R = my_type>
-    R trim_l(SimpleStr pattern) const {
+    R trim_l(StrPiece pattern) const {
         return R::trim_static<TrimSides::trimLeft, false>(d(), pattern);
     }
     template<typename R = my_type>
-    R trim_r(SimpleStr pattern) const {
+    R trim_r(StrPiece pattern) const {
         return R::trim_static<TrimSides::trimRight, false>(d(), pattern);
     }
     // Триминг по символам в литерале и пробелам
     template<typename R = my_type>
-    R trim_s(SimpleStr pattern) const {
+    R trim_s(StrPiece pattern) const {
         return R::trim_static<TrimSides::trimAll, true>(d(), pattern);
     }
     template<typename R = my_type>
-    R trim_sl(SimpleStr pattern) const {
+    R trim_sl(StrPiece pattern) const {
         return R::trim_static<TrimSides::trimLeft, true>(d(), pattern);
     }
     template<typename R = my_type>
-    R trim_sr(SimpleStr pattern) const {
+    R trim_sr(StrPiece pattern) const {
         return R::trim_static<TrimSides::trimRight, true>(d(), pattern);
     }
 };
@@ -594,7 +594,7 @@ struct SimpleStr : str_algs<K, SimpleStr<K>, SimpleStr<K> > {
 };
 
 /*
-* Класс, заявлящий, что ссылается на нуль-терминированную строку.
+* Класс, заявляющий, что ссылается на нуль-терминированную строку.
 * Служит для показателя того, что функция параметром хочет получить
 * строку с нулем в конце, например, ей надо дальше передавать его в
 * стороннее API. Без этого ей надо было бы либо указывать параметром
@@ -657,7 +657,7 @@ static auto e_s(const K* ptr) {
 // но применять только публичные конструкторы
 template<typename T, typename ...Args>
 T return_public(Args&& ...other) {
-    return T(forward<Args>(other)...);
+    return T{ forward<Args>(other)... };
 }
 
 // Чтобы через ::assign нельзя было вызвать приватные конструкторы класса
@@ -774,7 +774,7 @@ struct trimOperator : SymbSelector<K, N>::type, CheckSpaceTrim<K, withSpaces> {
 };
 
 template<TrimSides S, typename K>
-using SimpleTrim = trimOperator<S, K, 0, true>;
+using SimpleTrim = trimOperator<S, K, -1, true>;
 using trim_w = SimpleTrim<TrimSides::trimAll, u16symbol>;
 using trim_a = SimpleTrim<TrimSides::trimAll, u8symbol>;
 using triml_w = SimpleTrim<TrimSides::trimLeft, u16symbol>;
@@ -841,17 +841,6 @@ struct utf_convert_selector<u32symbol, u16symbol> {
     COREAS_API static uint convert(const u32symbol* src, uint srcLen, u16symbol* dest);
 };
 
-template<typename K>
-struct utf_init {
-    SimpleStr<K> src;
-};
-
-template<typename K>
-auto fromUtf(SimpleStr<K> t) {
-    return utf_init<K>{ t };
-}
-
-
 template<typename K, typename Impl>
 class from_utf_convertable {
 protected:
@@ -865,19 +854,21 @@ protected:
     */
 public:
     template<typename O, enable_if_t<!is_same_v<O, K>, int> = 0>
-    from_utf_convertable(utf_init<O> init) {
+    from_utf_convertable(SimpleStr<O> init) {
         using worker = utf_convert_selector<O, K>;
         Impl* d = static_cast<Impl*>(this);
-        uint len = init.src.length();
+        uint len = init.length();
         if (!len)
             d->createEmpty();
         else
-            d->setSize(worker::convert(init.src.c_str(), len, d->init(worker::maxSpace(len))));
+            d->setSize(worker::convert(init.c_str(), len, d->init(worker::maxSpace(len))));
     }
+    template<typename O, typename I, typename E, enable_if_t<!is_same_v<O, K>, int> = 0>
+    from_utf_convertable(const str_algs<O, SimpleStr<O>, I, E>& init) : from_utf_convertable(init.to_str()) {}
 
     template<typename From, enable_if_t<!is_same_v<From, K>, int> = 0>
     static my_type fromOtherUtf(SimpleStr<From> src) {
-        return my_type(utf_init{ src });
+        return my_type{ src };
     }
 };
 
@@ -927,7 +918,7 @@ class str_storeable {
             for (uint l = 0, len = f.length(); l < len; l++, ptr++) {
                 K s = *ptr;
                 if (opCheckWrongCase(s)) {
-                    my_type res(len);
+                    my_type res{ len };
                     K* pWrite = const_cast<K*>(res.c_str());
                     if (l) {
                         char_traits<K>::copy(pWrite, f.c_str(), l);
@@ -952,7 +943,7 @@ class str_storeable {
                 const K* ptr = f.c_str();
                 uint len = f.length(), first = op1(ptr, len);
                 if (first != str_pos::badIdx) {
-                    my_type res(len);
+                    my_type res{ len };
                     K* pWrite = const_cast<K*>(res.c_str());
                     if (first > 0)
                         traits::copy(pWrite, ptr, first);
@@ -973,7 +964,7 @@ class str_storeable {
                 uint len = f.length(), first = op1(ptr, len);
                 if (first != str_pos::badIdx) {
 
-                    my_type res(len);
+                    my_type res{ len };
 
                     K* pWrite = const_cast<K*>(res.c_str());
                     if (first > 0)
@@ -1060,9 +1051,9 @@ public:
     template<typename T>
     static my_type join(const T& strings, SimpleStr delimeter, bool tail = false) {
         if (!strings.size())
-            return my_type();
+            return my_type{};
         if (strings.size() == 1 && (!delimeter.length() || !tail))
-            return my_type(strings[0]);
+            return my_type{ strings[0] };
         uint commonLen = 0;
         for (auto it = strings.begin(), e = strings.end(); it != e;) {
             commonLen += it->length();
@@ -1071,9 +1062,9 @@ public:
                 commonLen += delimeter.length();
         }
         if (!commonLen)
-            return my_type();
+            return my_type{};
 
-        my_type res(commonLen);	// выделяется память под все строки
+        my_type res{ commonLen };	// выделяется память под все строки
         K* ptr = const_cast<K*>(res.c_str());
         for (auto it = strings.begin(), e = strings.end(); it != e; ) {
             uint copyLen = it->length();
@@ -1127,7 +1118,7 @@ public:
         if (!newSize)
             return my_type{};
         
-        my_type res(newSize);
+        my_type res{ newSize };
         K* ptr = const_cast<K*>(res.c_str());
         uint from = 0;
         for (const auto& s: findes) {
@@ -1470,7 +1461,8 @@ public:
         if (!o.isEmpty()) {
             uint size = _len();
             K* ptr = d().setSize(size + o.length());
-            char_traits<K>::move(ptr + o.length(), ptr, size);
+            if (size)
+                char_traits<K>::move(ptr + o.length(), ptr, size);
             char_traits<K>::copy(ptr, o.c_str(), o.length());
         }
         return d();
@@ -1481,7 +1473,8 @@ public:
         if (len) {
             uint size = _len();
             K* ptr = d().setSize(size + len);
-            char_traits<K>::move(ptr + len, ptr, size);
+            if (size)
+                char_traits<K>::move(ptr + len, ptr, size);
             expr.place(ptr);
         }
         return d();
@@ -1523,7 +1516,7 @@ public:
                 char_traits<K>::move(ptr + posWrite, ptr + offset, tailLen);
             d().setSize(posWrite + tailLen);
         } else {
-            // Заменяем на более длинный кусок, длина текста увеличиться, идём справа налево
+            // Заменяем на более длинный кусок, длина текста увеличится, идём справа налево
             auto finded = d().find_all(pattern, offset, maxCount);
             if (finded.size()) {
                 uint delta = repl.length() - pattern.length();
@@ -1679,7 +1672,7 @@ struct SharedStringData {
     SharedStringData(uint s) : size(s) {}
     atomic<uint> counter{ 1 };	// Счетчик ссылок
     uint size{ 0 };		        // Количество символов
-    void incr() { counter++; }// counter.fetch_add(1, memory_order_relaxed); }
+    void incr() { counter++; }  // counter.fetch_add(1, memory_order_relaxed); }
     void decr() { if (!--counter) core_as_free(this); }
 };
 
@@ -1716,7 +1709,7 @@ class empty_bases lstring :
     // Данные
     uint size;
     union Buffer {
-        K local[N + 1] ;
+        K local[N + 1];
         struct {
             uint bufSize;
             K* data;
@@ -1771,7 +1764,7 @@ public:
         if (other.size)
             traits::copy(reserve(other.size), other.c_str(), other.size + 1);
     }
-    // Перемещение из другой строки с таким же размером буфера
+    // Перемещени е из другой строки с таким же размером буфера
     lstring(my_type&& other) {
         if (other.size) {
             if (other.size > N) {
@@ -2108,7 +2101,7 @@ public:
     // Форматирование строки.
     template<typename ...T>
     static my_type format(const K* format, T&& ... args) {
-        return my_type(move(lstring<K, 200, true>().s_format(format, forward<T>(args)...)));
+        return my_type(move(lstring<K, 200, true>{}.s_format(format, forward<T>(args)...)));
     }
 };
 
@@ -2511,7 +2504,7 @@ public:
     }
     template<typename...ValArgs>
     auto emplace(const SimpleStr<K>& key, ValArgs&&... args) {
-        return emplace(StoreType<K>{ key, H()(key) }, forward<ValArgs>(args)...);
+        return emplace(StoreType<K>{ key, H{}(key) }, forward<ValArgs>(args)...);
     }
     template<typename...ValArgs>
     auto emplace_or_assign(const StoreType<K>& key, ValArgs&&... args) {
@@ -2524,19 +2517,19 @@ public:
     }
     template<typename...ValArgs>
     auto emplace_or_assign(const SimpleStr<K>& key, ValArgs&&... args) {
-        return emplace_or_assign(StoreType<K>{ key, H()(key) }, forward<ValArgs>(args)...);
+        return emplace_or_assign(StoreType<K>{ key, H{}(key) }, forward<ValArgs>(args)...);
     }
     auto find(const StoreType<K>& key) const {
         return hashStore.find(key);
     }
     auto find(const SimpleStr<K>& key) const {
-        return find(StoreType<K>{ key, H()(key) });
+        return find(StoreType<K>{ key, H{}(key) });
     }
     auto find(const StoreType<K>& key) {
         return hashStore.find(key);
     }
     auto find(const SimpleStr<K>& key) {
-        return find(StoreType<K>{ key, H()(key) });
+        return find(StoreType<K>{ key, H{}(key) });
     }
     auto erase(const StoreType<K>& key) {
         auto it = hashStore.find(key);
@@ -2548,7 +2541,7 @@ public:
         return 0;
     }
     auto erase(const SimpleStr<K>& key) {
-        return erase(StoreType<K> { key, H()(key) });
+        return erase(StoreType<K> { key, H{}(key) });
     }
     auto begin() const {
         return hashStore.begin();

@@ -114,6 +114,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -128,7 +129,7 @@
     </PreBuildEvent>
     <CustomBuildStep>
       <Command>robocopy ..\modules\starter "$(OutDir)modules\starter" /mir /im /NJH /NJS /NP
-runner check starter
+$(OutDir)lib\x86\coreas_runner_c check starter
 exit 0
 </Command>
     </CustomBuildStep>
@@ -157,6 +158,7 @@ exit 0
       <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>Full</Optimization>
       <StringPooling>true</StringPooling>
+      <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -181,7 +183,7 @@ exit 0
     </PostBuildEvent>
     <CustomBuildStep>
       <Command>robocopy ..\modules\starter "$(OutDir)modules\starter" /mir /im /NJH /NJS /NP
-coreas_runner_c check starter
+$(OutDir)lib\x86\coreas_runner_c check starter
 exit 0
 </Command>
     </CustomBuildStep>
@@ -201,6 +203,7 @@ exit 0
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -225,6 +228,7 @@ exit 0
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <StringPooling>true</StringPooling>
+      <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
