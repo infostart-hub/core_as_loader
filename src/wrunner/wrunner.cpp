@@ -13,7 +13,6 @@
 #include <locale>
 #include <clocale>
 #include <cwchar>
-using namespace std;
 
 #include "core_as/core_as.h"
 void* operator new(size_t size) {
@@ -55,9 +54,9 @@ coreas_runner_w run sendfile /c -subj "Мой корабль плывёт как
 // закрывающей кавычкой "проглатывает" её и прихватывает соседние аргументы. Это, во-первых, отличается
 // от поведения моих разборщиков командной строки в других частях программы, во-вторых, делает неудобным
 // передачу директорий в командной строке. Поэтому будем разбирать командную строку сами.
-void processArgs(lstringw<300>& defines, lstringw<300>& commands, lstringw<MAX_PATH>& folder, const vector<ssw>& argv) {
+void processArgs(lstringw<300>& defines, lstringw<300>& commands, lstringw<MAX_PATH>& folder, const std::vector<ssw>& argv) {
     uint argc = uint(argv.size());
-    vector<ssw> vdef, vcmd;
+    std::vector<ssw> vdef, vcmd;
     if (argc > 4) {
         vdef.reserve((argc - 3) / 2);
         vcmd.reserve(argc - 4);
@@ -76,7 +75,7 @@ void processArgs(lstringw<300>& defines, lstringw<300>& commands, lstringw<MAX_P
     commands.s_join(vcmd, L"\v").s_replace(L"\"\"", L"\"");
 }
 
-int run(const vector<ssw>& argv, HINSTANCE hInst, int nCmdShow) {
+int run(const std::vector<ssw>& argv, HINSTANCE hInst, int nCmdShow) {
     lstringw<300> defines, commands;
     lstringw<MAX_PATH> folder;
     processArgs(defines, commands, folder, argv);
@@ -88,7 +87,7 @@ int run(const vector<ssw>& argv, HINSTANCE hInst, int nCmdShow) {
     return pModule->run(commands, defines, GetStdHandle(STD_OUTPUT_HANDLE)) ? 0 : 1;
 }
 
-int check(const vector<ssw>& argv) {
+int check(const std::vector<ssw>& argv) {
     lstringw<300> defines, commands;
     lstringw<MAX_PATH> folder;
     processArgs(defines, commands, folder, argv);
@@ -101,7 +100,7 @@ int check(const vector<ssw>& argv) {
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR lpCmdLine, int nShowCmd) {
     setlocale(LC_ALL, "ru_RU.utf8");
-    vector<ssw> argv = core_as_parseArguments(e_s(lpCmdLine));
+    std::vector<ssw> argv = core_as_parseArguments(e_s(lpCmdLine));
     if (argv.size() > 2) {
         if (argv[1] == L"run") {
             return run(argv, hInstance, nShowCmd);

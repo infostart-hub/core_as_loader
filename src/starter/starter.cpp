@@ -7,6 +7,7 @@
 #include "starter.h"
 #include "modules_list.h"
 #include "VersionInfo.h"
+#include "debugdump.h"
 
 UINT const WMAPP_NOTIFYCALLBACK = WM_APP + 1;
 HWND hMainWnd;
@@ -164,8 +165,8 @@ struct ConnectedInstance {
     stringw name;
 };
 
-vector<ConnectedInstance> connectedInstances;
-vector<DWORD> injectThreads;
+std::vector<ConnectedInstance> connectedInstances;
+std::vector<DWORD> injectThreads;
 
 // Ждем строку вида ThreadID
 void processInject(SimpleStrNtW msg) {
@@ -174,7 +175,7 @@ void processInject(SimpleStrNtW msg) {
 
 // Ждем строку вида ИмяИнстанса\vHWND окна
 void processConnect(SimpleStrNtW msg) {
-    auto parts = msg.split<vector<ssw>>(L"\v"_ss);
+    auto parts = msg.split<std::vector<ssw>>(L"\v"_ss);
     if (parts.size() == 2) {
         HWND hWnd = (HWND)wcstol(parts[1].c_str(), nullptr, 0);
         if (IsWindow(hWnd))
@@ -193,7 +194,7 @@ void processDisconnect(SimpleStrNtW msg) {
 // Ждем строку вида Заголовок\vТекст
 void processShowNotify(SimpleStrNtW msg) {
     // Данные для показа уведомления идут в виде Заголовок\vТекст
-    auto txt = msg.split<vector<ssw>>(L"\v"_ss);
+    auto txt = msg.split<std::vector<ssw>>(L"\v"_ss);
     if (txt.size() == 2)
         showNotify(txt[0], txt[1]);
 }
@@ -387,7 +388,23 @@ BOOL DeleteNotificationIcon() {
     return Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
+
+/* Так как вылет может произойти еще на этапе инициализации cruntime,
+*  то зададим свою точку входа в программу, поставим свой фильтр на исключения
+*  и вызовем cruntime
+*/
+extern "C" void wWinMainCRTStartup();
+
+extern "C" void realEntry() {
+    initLastDump();
+    wWinMainCRTStartup();
+    // Сюда не должны приходить
+    ExitProcess(0);
+}
+
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int) {
+    // cruntime могла заменить наши фильтры, восстановим их
+    initLastDump();
     if (isPrevInstanceRunning()) {
         MessageBox(0, L"Экземпляр стартера уже запущен", AppName, MB_OK);
         return 1;

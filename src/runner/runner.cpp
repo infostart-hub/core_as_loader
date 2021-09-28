@@ -13,7 +13,6 @@
 #include <locale>
 #include <clocale>
 #include <cwchar>
-using namespace std;
 
 #include "core_as/core_as.h"
 void* operator new(size_t size) {
@@ -58,9 +57,9 @@ coreas_runner_c run sendfile /c -subj "Мой корабль плывёт как
 // от поведения моих разборщиков командной строки в других частях программы, во-вторых, делает неудобным
 // передачу директорий в командной строке. Поэтому будем разбирать командную строку сами.
 void processArgs(lstringw<300>& defines, lstringw<300>& commands, lstringw<MAX_PATH>& folder) {
-    vector<ssw> argv = core_as_parseArguments(e_s(GetCommandLine()));
+    std::vector<ssw> argv = core_as_parseArguments(e_s(GetCommandLine()));
     uint argc = uint(argv.size());
-    vector<ssw> vdef, vcmd;
+    std::vector<ssw> vdef, vcmd;
     if (argc > 4) {
         vdef.reserve((argc - 3) / 2);
         vcmd.reserve(argc - 4);

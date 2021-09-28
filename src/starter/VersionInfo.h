@@ -40,7 +40,7 @@ public:
 
 protected:
     void init(HINSTANCE hInst, BOOL bFull);
-    vector<SBlockInfo*> m_blocks;
+    std::vector<SBlockInfo*> m_blocks;
     uint64_t m_wFileVersion;
     uint64_t m_wProdVersion;
     bool loaded{ false };

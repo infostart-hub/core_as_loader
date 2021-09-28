@@ -3,7 +3,7 @@
 * База для строковых конкатенаций через выражения времени компиляции
 */
 #pragma once
-
+namespace coreas_str {
 using u8symbol = char;
 using u32symbol = char32_t;
 
@@ -19,7 +19,7 @@ struct wchar_type<2> {
 using u16symbol = typename wchar_type<sizeof(wchar_t)>::type;
 
 using uint = unsigned int;
-using uu8symbol = make_unsigned<u8symbol>::type;
+using uu8symbol = std::make_unsigned<u8symbol>::type;
 
 /*
 * Шаблонные классы для создания строковых выражений из нескольких источников
@@ -59,10 +59,10 @@ struct strexprjoin {
 
 template<typename T, typename K = void, typename ...Types>
 struct is_one_of_type {
-    static constexpr bool value = is_same_v<T, K> ? true : is_one_of_type<T, Types...>::value;
+    static constexpr bool value = std::is_same_v<T, K> ? true : is_one_of_type<T, Types...>::value;
 };
 
-template<typename T> struct is_one_of_type<T, void> : false_type {};
+template<typename T> struct is_one_of_type<T, void> : std::false_type {};
 
 template<typename K>
 struct expr_empty {
@@ -89,7 +89,7 @@ struct expr_char {
     }
 };
 
-template<typename A, typename K, typename enable_if_t<is_same_v<K, typename A::symb_type>, int> = 0>
+template<typename A, typename K, typename std::enable_if_t<std::is_same_v<K, typename A::symb_type>, int> = 0>
 constexpr static auto operator & (const strexpr<A>& a, K s) {
     using J = strexprjoin<A, expr_char<K>>;
     return strexpr<J>{J{ a.a, expr_char<K>{s} }};
@@ -102,12 +102,12 @@ struct expr_literal {
     constexpr uint length() const noexcept { return N; }
     constexpr symb_type* place(symb_type* p) const noexcept {
         if constexpr (N != 0)
-            char_traits<K>::copy(p, str, N);
+            std::char_traits<K>::copy(p, str, N);
         return p + N;
     }
 };
 
-template<typename A, typename K, size_t N, enable_if_t<is_same_v<K, typename A::symb_type>, int> = 0>
+template<typename A, typename K, size_t N, std::enable_if_t<std::is_same_v<K, typename A::symb_type>, int> = 0>
 constexpr static auto operator & (const strexpr<A>& a, const K(&s)[N]) {
     using L = expr_literal<K, static_cast<uint>(N - 1)>;
     using J = strexprjoin<A, L>;
@@ -155,7 +155,7 @@ struct expr_pad {
     constexpr uint length() const noexcept { return len; }
     constexpr symb_type* place(symb_type* p) const noexcept {
         if (len)
-            char_traits<K>::assign(p, len, s);
+            std::char_traits<K>::assign(p, len, s);
         return p + len;
     }
 };
@@ -170,3 +170,5 @@ template<typename K>
 constexpr static auto e_c(K s, uint l) {
     return expr_pad<K>{ s, l };
 }
+
+}// namespace coreas_str {

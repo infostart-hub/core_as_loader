@@ -5,6 +5,7 @@
 #pragma once
 #include "core_as_base.h"
 #include "strexpr.h"
+namespace coreas_str {
 
 template<typename T>
 struct unicode_traits {};
@@ -57,7 +58,7 @@ constexpr const uint badIdx = static_cast<uint>(-1);
 }
 
 template<uint N>
-using is_const_pattern_t = enable_if_t<(N > 1) && N <= 17, int>;
+using is_const_pattern_t = std::enable_if_t<(N > 1) && N <= 17, int>;
 
 template<typename K, uint I>
 struct _ascii_mask {
@@ -71,22 +72,22 @@ struct _ascii_mask<K, 0> {
 
 template<typename K>
 struct ascii_mask {
-    using uns = typename make_unsigned<K>::type;
+    using uns = typename std::make_unsigned<K>::type;
     constexpr static const uint width = sizeof(size_t) / sizeof(uns);
     constexpr static const size_t value = _ascii_mask<uns, width>::value;
 };
 
 template<bool, typename O, typename K>
-constexpr bool is_strtype_obj_v = is_same_v<typename O::symb_type, K>;
+constexpr bool is_strtype_obj_v = std::is_same_v<typename O::symb_type, K>;
 
 template<typename O, typename K>
 constexpr bool is_strtype_obj_v<false, O, K> = false;
 
 template<typename O, typename K>
-constexpr bool is_strtype_v = is_strtype_obj_v<is_class_v<O>, O, K>;
+constexpr bool is_strtype_v = is_strtype_obj_v<std::is_class_v<O>, O, K>;
 
 template<typename O, typename K>
-using is_strtype_t = enable_if_t<is_strtype_v<O, K>, int>;
+using is_strtype_t = std::enable_if_t<is_strtype_v<O, K>, int>;
 
 
 template<typename K>
@@ -104,7 +105,6 @@ constexpr static K makeAsciiLower(K k) {
     return isAsciiUpper(k) ? k | 0x20 : k;
 }
 
-// Только после проверки, что это upper
 template<typename K>
 constexpr static K makeAsciiUpper(K k) {
     return isAsciiLower(k) ? k & ~0x20 : k;
@@ -149,9 +149,9 @@ class str_algs {
 public:
     using symb_type = K;
     using StrPiece = StrRef;
-    using traits = char_traits<K>;
+    using traits = std::char_traits<K>;
     using uni = unicode_traits<K>;
-    using uns_type = make_unsigned_t<K>;
+    using uns_type = std::make_unsigned_t<K>;
     using my_type = Impl;
     // Пустой конструктор
     str_algs() = default;
@@ -326,10 +326,10 @@ public:
         return my_type(d().mid(from, len));
     }
 
-    vector<uint> find_all(StrPiece pattern, uint offset = 0, uint maxCount = 0) const {
+    std::vector<uint> find_all(StrPiece pattern, uint offset = 0, uint maxCount = 0) const {
         if (!maxCount)
             maxCount--;
-        vector<uint> result;
+        std::vector<uint> result;
         while (maxCount-- > 0) {
             uint fnd = find(pattern, offset);
             if (fnd == str_pos::badIdx)
@@ -612,7 +612,7 @@ struct SimpleStrNt : SimpleStr<K> {
 
     constexpr static const K empty_string[1] = { 0 };
     static my_type from_pointer(const K* p) {
-        return my_type{ p ? p : empty_string, p ? static_cast<uint>(char_traits<K>::length(p)) : 0 };
+        return my_type{ p ? p : empty_string, p ? static_cast<uint>(base::traits::length(p)) : 0 };
     }
     constexpr static my_type null() { return my_type{ empty_string, 0 }; }
     operator const K* () const noexcept {
@@ -657,14 +657,14 @@ static auto e_s(const K* ptr) {
 // но применять только публичные конструкторы
 template<typename T, typename ...Args>
 T return_public(Args&& ...other) {
-    return T{ forward<Args>(other)... };
+    return T{ std::forward<Args>(other)... };
 }
 
 // Чтобы через ::assign нельзя было вызвать приватные конструкторы класса
 // вызываем конструктор через эту прокладку
 template<typename T, typename ...Args>
 void init_public(T* pThis, Args&& ...other) {
-    new (pThis) T(forward<Args>(other)...);
+    new (pThis) T(std::forward<Args>(other)...);
 }
 
 template<typename K, bool withSpaces>
@@ -684,7 +684,7 @@ template<typename K>
 struct CheckSymbolsTrim  {
     SimpleStr<K> symbols;
     bool isTrimSybols(K s) const {
-        return symbols.len != 0 && char_traits<K>::find(symbols.str, symbols.len, s) != nullptr;
+        return symbols.len != 0 && SimpleStr<K>::traits::find(symbols.str, symbols.len, s) != nullptr;
     }
 };
 
@@ -700,19 +700,19 @@ struct CheckConstSymbolsTrim {
     }
     
     template <size_t... Indexes>
-    constexpr CheckConstSymbolsTrim(const K(&value)[N + 1], index_sequence<Indexes...> dummy) :
+    constexpr CheckConstSymbolsTrim(const K(&value)[N + 1], std::index_sequence<Indexes...> dummy) :
         CheckConstSymbolsTrim(value[Indexes]...) {
     }
 
     constexpr CheckConstSymbolsTrim(const K(&s)[N + 1]) : CheckConstSymbolsTrim(s, typename std::make_index_sequence<N>{}){
     }
 
-    template<uint Idx, enable_if_t<Idx == N, int> = 0>
+    template<uint Idx, std::enable_if_t<Idx == N, int> = 0>
     constexpr bool isInSymbols(K s) const noexcept {
         return false;
     }
 
-    template<uint Idx, enable_if_t<Idx != N, int> = 0>
+    template<uint Idx, std::enable_if_t<Idx != N, int> = 0>
     constexpr bool isInSymbols(K s) const noexcept {
         return s == symbols[Idx] || isInSymbols<Idx + 1>(s);
     }
@@ -853,7 +853,7 @@ protected:
        setSize(uint size)
     */
 public:
-    template<typename O, enable_if_t<!is_same_v<O, K>, int> = 0>
+    template<typename O, std::enable_if_t<!std::is_same_v<O, K>, int> = 0>
     from_utf_convertable(SimpleStr<O> init) {
         using worker = utf_convert_selector<O, K>;
         Impl* d = static_cast<Impl*>(this);
@@ -863,10 +863,10 @@ public:
         else
             d->setSize(worker::convert(init.c_str(), len, d->init(worker::maxSpace(len))));
     }
-    template<typename O, typename I, typename E, enable_if_t<!is_same_v<O, K>, int> = 0>
+    template<typename O, typename I, typename E, std::enable_if_t<!std::is_same_v<O, K>, int> = 0>
     from_utf_convertable(const str_algs<O, SimpleStr<O>, I, E>& init) : from_utf_convertable(init.to_str()) {}
 
-    template<typename From, enable_if_t<!is_same_v<From, K>, int> = 0>
+    template<typename From, std::enable_if_t<!std::is_same_v<From, K>, int> = 0>
     static my_type fromOtherUtf(SimpleStr<From> src) {
         return my_type{ src };
     }
@@ -895,7 +895,7 @@ template<typename K, typename Impl>
 class str_storeable {
 
     using my_type = Impl;
-    using traits = char_traits<K>;
+    using traits = std::char_traits<K>;
     using uni = unicode_traits<K>;
 
     Impl& d() noexcept {
@@ -921,7 +921,7 @@ class str_storeable {
                     my_type res{ len };
                     K* pWrite = const_cast<K*>(res.c_str());
                     if (l) {
-                        char_traits<K>::copy(pWrite, f.c_str(), l);
+                        traits::copy(pWrite, f.c_str(), l);
                         pWrite += l;
                     }
                     *pWrite++ = opMakeNeedCase(s);
@@ -1007,18 +1007,31 @@ public:
     constexpr str_storeable(SimpleStr other) {
         if (other.length()) {
             K* ptr = d().init(other.length());
-            char_traits<K>::copy(ptr, other.c_str(), other.length());
+            traits::copy(ptr, other.c_str(), other.length());
             ptr[other.length()] = 0;
         } else
             d().createEmpty();
     }
-    
+    // Конструктор повторения
+    constexpr str_storeable(SimpleStr pattern, uint repeat) {
+        uint l = pattern.length(), allLen = l * repeat;
+        if (allLen) {
+            K* ptr = d().init(allLen);
+            for (uint i = 0; i < repeat; i++) {
+                traits::copy(ptr, pattern.c_str(), l);
+                ptr += l;
+            }
+            *ptr = 0;
+        } else
+            d().createEmpty();
+    }
+
     // Конструктор из строкового литерала
     template<uint N>
     constexpr str_storeable(const K(&value)[N]) {
         if (N > 1) {
             K* ptr = d().init(N - 1);
-            char_traits<K>::copy(ptr, value, N - 1);
+            traits::copy(ptr, value, N - 1);
             ptr[N - 1] = 0;
         } else
             d().createEmpty();
@@ -1124,18 +1137,18 @@ public:
         for (const auto& s: findes) {
             uint copyLen = s - from;
             if (copyLen) {
-                char_traits<K>::copy(ptr, f.c_str() + from, copyLen);
+                traits::copy(ptr, f.c_str() + from, copyLen);
                 ptr += copyLen;
             }
             if (repl.length()) {
-                char_traits<K>::copy(ptr, repl.c_str(), repl.len);
+                traits::copy(ptr, repl.c_str(), repl.len);
                 ptr += repl.len;
             }
             from = s + pattern.len;
         }
         myLen -= from;
         if (myLen) {
-            char_traits<K>::copy(ptr, f.c_str() + from, myLen);
+            traits::copy(ptr, f.c_str() + from, myLen);
             ptr += myLen;
         }
         *ptr = 0;
@@ -1150,7 +1163,7 @@ template<>
 struct printf_selector<u8symbol> {
     template<typename ...T>
     static int snprintf(u8symbol* buffer, size_t count, const u8symbol* format, T&& ... args) {
-        return std::snprintf(buffer, count, format, forward<T>(args)...);
+        return std::snprintf(buffer, count, format, std::forward<T>(args)...);
     }
     static int vsnprintf(u8symbol* buffer, size_t count, const u8symbol* format, va_list args) {
         return std::vsnprintf(buffer, count, format, args);
@@ -1161,7 +1174,7 @@ template<>
 struct printf_selector<u16symbol> {
     template<typename ...T>
     static int snprintf(u16symbol* buffer, size_t count, const u16symbol* format, T&& ... args) {
-        return std::swprintf(buffer, count, format, forward<T>(args)...);
+        return std::swprintf(buffer, count, format, std::forward<T>(args)...);
     }
     static int vsnprintf(u16symbol* buffer, size_t count, const u16symbol* format, va_list args) {
         return std::vswprintf(buffer, count, format, args);
@@ -1219,16 +1232,16 @@ class str_mutable {
     }
     using SimpleStr = StrRef;
     using symb_type = K;
-    using traits = char_traits<K>;
+    using traits = std::char_traits<K>;
     using uni = unicode_traits<K>;
-    using uns_type = make_unsigned_t<K>;
+    using uns_type = std::make_unsigned_t<K>;
 
     template<typename Op>
     Impl& make_trim_op(const Op& op) {
         SimpleStr me = static_cast<SimpleStr>(d()), pos = op(me);
         if (me.len != pos.len) {
             if (me.str != pos.str)
-                char_traits<K>::move(const_cast<K*>(me.str), pos.str, pos.len);
+                std::char_traits<K>::move(const_cast<K*>(me.str), pos.str, pos.len);
             d().setSize(pos.len);
         }
         return d();
@@ -1394,7 +1407,7 @@ public:
         if (!o.isEmpty()) {
             uint size = _len();
             K* ptr = d().setSize(size + o.length());
-            char_traits<K>::copy(ptr + size, o.c_str(), o.length());
+            std::char_traits<K>::copy(ptr + size, o.c_str(), o.length());
         }
         return d();
     }
@@ -1462,8 +1475,8 @@ public:
             uint size = _len();
             K* ptr = d().setSize(size + o.length());
             if (size)
-                char_traits<K>::move(ptr + o.length(), ptr, size);
-            char_traits<K>::copy(ptr, o.c_str(), o.length());
+                std::char_traits<K>::move(ptr + o.length(), ptr, size);
+            std::char_traits<K>::copy(ptr, o.c_str(), o.length());
         }
         return d();
     }
@@ -1474,7 +1487,7 @@ public:
             uint size = _len();
             K* ptr = d().setSize(size + len);
             if (size)
-                char_traits<K>::move(ptr + len, ptr, size);
+                std::char_traits<K>::move(ptr + len, ptr, size);
             expr.place(ptr);
         }
         return d();
@@ -1503,17 +1516,17 @@ public:
                     break;
                 uint lenOfPiece = idx - offset;
                 if (posWrite < offset && lenOfPiece)
-                    char_traits<K>::move(ptr + posWrite, ptr + offset, lenOfPiece);
+                    std::char_traits<K>::move(ptr + posWrite, ptr + offset, lenOfPiece);
                 posWrite += lenOfPiece;
                 if (repl.length()) {
-                    char_traits<K>::copy(ptr + posWrite, repl.c_str(), repl.length());
+                    std::char_traits<K>::copy(ptr + posWrite, repl.c_str(), repl.length());
                     posWrite += repl.length();
                 }
                 offset = idx + pattern.length();
             }
             uint tailLen = _len() - offset;
             if (posWrite < offset && tailLen)
-                char_traits<K>::move(ptr + posWrite, ptr + offset, tailLen);
+                std::char_traits<K>::move(ptr + posWrite, ptr + offset, tailLen);
             d().setSize(posWrite + tailLen);
         } else {
             // Заменяем на более длинный кусок, длина текста увеличится, идём справа налево
@@ -1526,8 +1539,8 @@ public:
                 for (uint i = uint(finded.size()); i--;) {
                     uint pos = finded[i] + pattern.length();
                     uint lenOfPiece = endOfPiece - pos;
-                    char_traits<K>::move(ptr + pos + allDelta, ptr + pos, lenOfPiece);
-                    char_traits<K>::copy(ptr + pos + allDelta - repl.length(), repl.c_str(), repl.length());
+                    std::char_traits<K>::move(ptr + pos + allDelta, ptr + pos, lenOfPiece);
+                    std::char_traits<K>::copy(ptr + pos + allDelta - repl.length(), repl.c_str(), repl.length());
                     allDelta -= delta;
                     endOfPiece = finded[i];
                 }
@@ -1536,7 +1549,7 @@ public:
         return d();
     }
 
-    template<typename From, enable_if_t<is_strtype_v<From, K>, int> = 0>
+    template<typename From, std::enable_if_t<is_strtype_v<From, K>, int> = 0>
     static Impl& replaceTo_s(Impl& obj, const From& f, SimpleStr pattern, SimpleStr repl, uint offset = 0, uint maxCount = 0) {
         obj.Impl::~Impl();
         return *new (&obj) Impl(Impl::replace_s(f, pattern, repl, offset, maxCount));
@@ -1562,16 +1575,16 @@ public:
         return d();
     }
     // Реализация заполнения данными с проверкой на длину и перевыделением буфера в случае недостаточной длины.
-    template<typename Op, enable_if_t<is_invocable_v<Op, K*, uint>, int> = 0>
+    template<typename Op, std::enable_if_t<std::is_invocable_v<Op, K*, uint>, int> = 0>
     my_type& operator << (const Op& fillFunction) {
         return func_fill(0, fillFunction);
     }
     // Реализация добавления данных с проверкой на длину и перевыделением буфера в случае недостаточной длины.
-    template<typename Op, enable_if_t<is_invocable_v<Op, K*, uint>, int> = 0>
+    template<typename Op, std::enable_if_t<std::is_invocable_v<Op, K*, uint>, int> = 0>
     my_type& operator <<= (const Op& fillFunction) {
-        return func_fill(size, fillFunction);
+        return func_fill(_len(), fillFunction);
     }
-    template<typename Op, enable_if_t<is_invocable_v<Op, my_type&>, int> = 0>
+    template<typename Op, std::enable_if_t<std::is_invocable_v<Op, my_type&>, int> = 0>
     my_type& operator << (const Op& fillFunction) {
         fillFunction(d());
         return d();
@@ -1590,14 +1603,14 @@ public:
         // Тут грязный хак для u8symbol и wide_char. u8symbol версия snprintf сразу возвращает размер нужного буфера, если он мал
         // а swprintf - возвращает -1. Поэтому для широкой версии надо тупо увеличивать буфер наугад, пока не подойдет
         if constexpr (sizeof(K) == 1) {
-            result = printf_selector<K>::snprintf(ptr + from, capacity + 1, format, forward<T>(args)...);
+            result = printf_selector<K>::snprintf(ptr + from, capacity + 1, format, std::forward<T>(args)...);
             if (result > (int) capacity) {
                 ptr = from == 0 ? d().reserve(result) : d().setSize(from + result);
-                result = printf_selector<K>::snprintf(ptr + from, result + 1, format, forward<T>(args)...);
+                result = printf_selector<K>::snprintf(ptr + from, result + 1, format, std::forward<T>(args)...);
             }
         } else {
             for (uint i = 0; ; i++) {
-                result = printf_selector<K>::snprintf(ptr + from, capacity + 1, format, forward<T>(args)...);
+                result = printf_selector<K>::snprintf(ptr + from, capacity + 1, format, std::forward<T>(args)...);
                 if (result < 0 && i < 4) {
                     // Не хватило буфера или ошибка конвертации.
                     // Попробуем увеличить буфер в два раза, но не более чем всего в 16 раз
@@ -1615,15 +1628,15 @@ public:
     }
     template<typename... T>
     my_type& s_format(const K* format, T&& ... args) {
-        return format_to(0, format, forward<T>(args)...);
+        return format_to(0, format, std::forward<T>(args)...);
     }
     template<typename... T>
     my_type& s_append_f(const K* format, T&& ... args) {
-        return format_to(_len(), format, forward<T>(args)...);
+        return format_to(_len(), format, std::forward<T>(args)...);
     }
     template<typename Op, typename ...Args>
     my_type& with(const Op& fillFunction, Args&& ... args) {
-        fillFunction(d(), forward<Args>(args)...);
+        fillFunction(d(), std::forward<Args>(args)...);
         return d();
     }
     my_type& s_remove(uint from, uint count) {
@@ -1670,7 +1683,7 @@ public:
 struct SharedStringData {
     SharedStringData() = default;
     SharedStringData(uint s) : size(s) {}
-    atomic<uint> counter{ 1 };	// Счетчик ссылок
+    std::atomic<uint> counter{ 1 };	// Счетчик ссылок
     uint size{ 0 };		        // Количество символов
     void incr() { counter++; }  // counter.fetch_add(1, memory_order_relaxed); }
     void decr() { if (!--counter) core_as_free(this); }
@@ -1699,7 +1712,7 @@ class empty_bases lstring :
     using base_store = str_storeable<K, lstring<K, N, forShared>>;
     using base_mutable = str_mutable<K, SimpleStr<K>, lstring<K, N, forShared>>;
     using base_utf = from_utf_convertable<K, lstring<K, N, forShared>>;
-    using traits = char_traits<K>;
+    using traits = std::char_traits<K>;
 
     friend base_store;
     friend base_mutable;
@@ -1744,10 +1757,6 @@ class empty_bases lstring :
         return reinterpret_cast<K*>(reinterpret_cast<u8symbol*>(ptr) + extra);
     }
 
-    uint capacity() const noexcept {
-        return isBig() ? buffer.big.bufSize : N;
-    }
-
 public:
     using my_type = lstring<K, N, forShared>;
     using base_store::base_store;
@@ -1776,14 +1785,14 @@ public:
         }
     }
     // Копирование из строки другого размера
-    template<uint L, bool S, enable_if_t<L != N, int> = 0>
+    template<uint L, bool S, std::enable_if_t<L != N, int> = 0>
     lstring(const lstring<K, L, S>& other) {
         uint len = other.length();
         if (len)
             traits::copy(reserve(len), other.c_str(), len + 1);
     }
 
-    template<typename Op, enable_if_t<is_invocable_v<Op, K*, uint> || is_invocable_v<Op, my_type&>, int> = 0>
+    template<typename Op, std::enable_if_t<std::is_invocable_v<Op, K*, uint> || std::is_invocable_v<Op, my_type&>, int> = 0>
     lstring(const Op& op) {
         this->operator<<(op);
     }
@@ -1792,7 +1801,7 @@ public:
     template<typename... T>
     my_type& assign(T&&... args) {
         this->~lstring();
-        init_public<my_type>(this, forward<T>(args)...);
+        init_public<my_type>(this, std::forward<T>(args)...);
         return *this;
     }
     my_type& assign(const my_type& other) {
@@ -1825,6 +1834,10 @@ public:
     }
     bool isEmpty() const noexcept {
         return size == 0;
+    }
+
+    uint capacity() const noexcept {
+        return isBig() ? buffer.big.bufSize : N;
     }
 
     // Выделить буфер, достаточный для размещения newSize символов плюс завершающий ноль
@@ -1885,6 +1898,17 @@ public:
         K* res = str();
         res[newSize] = 0;
         return res;
+    }
+    void defineSize() {
+        K* start = str();
+        for (K* ptr = start, *end = start + capacity(); ptr < end; ptr++) {
+            if (*ptr == 0) {
+                size = ptr - start;
+                return;
+            }
+        }
+        size = capacity();
+        start[size] = 0;
     }
 };
 
@@ -1947,7 +1971,6 @@ protected:
 
     friend base_store;
     friend base_utf;
-    friend class AsStringW;
 
     void createEmpty() {
         str = getEmptyString();
@@ -1986,7 +2009,7 @@ protected:
         return (K*)(emptyString + 12);
     }
 
-    using traits = char_traits<K>;
+    using traits = std::char_traits<K>;
     using uni = unicode_traits<K>;
 
 public:
@@ -1994,7 +2017,7 @@ public:
     using base_utf::base_utf;
 
     using symb_type = K;
-    using uns_type = make_unsigned_t<K>;
+    using uns_type = std::make_unsigned_t<K>;
     using my_type = sstring<K>;
 
     sstring() = default;
@@ -2051,7 +2074,7 @@ public:
         * Поэтому из соображений производительности так делать не будем, просто не пишите такой код
         */
         this->~sstring();
-        init_public<my_type>(this, forward<T>(args)...);
+        init_public<my_type>(this, std::forward<T>(args)...);
         return *this;
     }
     my_type& assign(const my_type& other) {
@@ -2070,7 +2093,7 @@ public:
         return assign(other);
     }
     my_type& operator = (my_type&& other) noexcept {
-        return assign(move(other));
+        return assign(std::move(other));
     }
     my_type& operator = (const SimpleStr<K>& other) {
         return assign(other);
@@ -2101,7 +2124,7 @@ public:
     // Форматирование строки.
     template<typename ...T>
     static my_type format(const K* format, T&& ... args) {
-        return my_type(move(lstring<K, 200, true>{}.s_format(format, forward<T>(args)...)));
+        return my_type(std::move(lstring<K, 200, true>{}.s_format(format, std::forward<T>(args)...)));
     }
 };
 
@@ -2201,7 +2224,7 @@ struct expr_num {
         return l;
     }
     K* place(K* ptr) const noexcept {
-        char_traits<K>::copy(ptr, buf + bufSize - l, l);
+        std::char_traits<K>::copy(ptr, buf + bufSize - l, l);
         return ptr + l;
     }
 };
@@ -2213,9 +2236,9 @@ constexpr static auto operator & (const strexpr<A>& a, const expr_num<typename A
 }
 
 template <typename T>
-inline constexpr bool is_number_v = is_one_of_type<remove_cv_t<T>, int, short, long, long long, uint, unsigned short, unsigned long, unsigned long long>::value;
+inline constexpr bool is_number_v = is_one_of_type<std::remove_cv_t<T>, int, short, long, long long, uint, unsigned short, unsigned long, unsigned long long>::value;
 
-template<typename A, typename T, enable_if_t<is_number_v<T>, int> = 0>
+template<typename A, typename T, std::enable_if_t<is_number_v<T>, int> = 0>
 constexpr static auto operator & (const strexpr<A>& a, T s) {
     using K = typename A::symb_type;
     using J = strexprjoin<A, expr_num<K, T>>;
@@ -2298,7 +2321,7 @@ struct expr_replaces {
     SimpleStr<K> what;
     const K* pattern;
     const K* repl;
-    mutable vector<uint> positions;
+    mutable std::vector<uint> positions;
 
     constexpr expr_replaces(SimpleStr<K> w, const K* p, const K* r) : what(w), pattern(p), repl(r) {}
 
@@ -2311,11 +2334,11 @@ struct expr_replaces {
         for (uint k : positions) {
             uint copyLen = k - from;
             if (copyLen) {
-                char_traits<K>::copy(ptr, what.c_str() + from, copyLen);
+                std::char_traits<K>::copy(ptr, what.c_str() + from, copyLen);
                 ptr += copyLen;
             }
             if constexpr (L > 0) {
-                char_traits<K>::copy(ptr, repl, L);
+                std::char_traits<K>::copy(ptr, repl, L);
                 ptr += L;
             }
             if constexpr (N > 0)
@@ -2323,7 +2346,7 @@ struct expr_replaces {
         }
         uint tailLen = what.length() - from;
         if (tailLen) {
-            char_traits<K>::copy(ptr, what.c_str() + from, tailLen);
+            std::char_traits<K>::copy(ptr, what.c_str() + from, tailLen);
             ptr += tailLen;
         }
         return ptr;
@@ -2336,7 +2359,7 @@ constexpr static auto operator & (const strexpr<A>& a, const expr_replaces<typen
     return strexpr<J>{J{ a.a, s }};
 }
 
-template<typename K, uint N, uint L, enable_if_t<(N > 1), int> = 0>
+template<typename K, uint N, uint L, std::enable_if_t<(N > 1), int> = 0>
 constexpr static auto e_repl(SimpleStr<K> w, const K(&p)[N], const K(&r)[L]) {
     return expr_replaces<K, N - 1, L - 1>{w, p, r};
 }
@@ -2372,26 +2395,26 @@ constexpr static auto e_choice(bool c, const A& a, const B& b) {
 }
 
 template<size_t ... Is>
-constexpr auto indexSequenceReverse(index_sequence<Is...> const&) -> decltype(std::index_sequence<sizeof...(Is)-1U-Is...>{});
+constexpr auto indexSequenceReverse(std::index_sequence<Is...> const&) -> decltype(std::index_sequence<sizeof...(Is)-1U-Is...>{});
 template <size_t N>
-using makeIndexSequenceReverse = decltype(indexSequenceReverse(make_index_sequence<N>{}));
+using makeIndexSequenceReverse = decltype(indexSequenceReverse(std::make_index_sequence<N>{}));
 
 template<typename K>
 static size_t fnv_hash(const K* ptr, uint l) {
-    size_t h = _FNV_offset_basis;
+    size_t h = std::_FNV_offset_basis;
     while (l--)
-        h = h ^ *ptr++ * _FNV_prime;
+        h = (h ^ *ptr++) * std::_FNV_prime;
     return h;
 }
 
 template<typename K>
 constexpr size_t fnv_hash() {
-    return _FNV_offset_basis;
+    return std::_FNV_offset_basis;
 };
 
 template<typename K, typename... Chars>
 constexpr size_t fnv_hash(K symb, Chars... chrs) {
-    return (fnv_hash<K>(chrs...) ^ symb) * _FNV_prime;
+    return (fnv_hash<K>(chrs...) ^ symb) * std::_FNV_prime;
 };
 
 template <typename K, size_t N, size_t... Indexes>
@@ -2406,12 +2429,12 @@ constexpr static auto get_hash(const K(&value)[N]) {
 
 template<typename K>
 constexpr size_t fnv_hash_ia() {
-    return _FNV_offset_basis;
+    return std::_FNV_offset_basis;
 };
 
 template<typename K, typename... Chars>
 constexpr size_t fnv_hash_ia(K symb, Chars... chrs) {
-    return (fnv_hash_ia<K>(chrs...) ^ (symb >='A' && symb <= 'Z' ? symb | 0x20 : symb)) * _FNV_prime;
+    return (fnv_hash_ia<K>(chrs...) ^ (symb >='A' && symb <= 'Z' ? symb | 0x20 : symb)) * std::_FNV_prime;
 };
 
 template <typename K, size_t N, size_t... Indexes>
@@ -2426,7 +2449,7 @@ constexpr static auto get_hash_ia(const K(&value)[N]) {
 
 template<typename K>
 struct StoreType {
-    using list_t = list<sstring<K>>;
+    using list_t = std::list<sstring<K>>;
     using str_it_node = typename list_t::iterator;
 
     SimpleStr<K> str;
@@ -2452,22 +2475,22 @@ using HashKeyU = StoreType<u32symbol>;
 // в рантайме. Не используйте столь длинные строки как прекомпиленные ключи поиска.
 constexpr static const size_t MaxStaticHashLen = 31;
 
-template<typename K, uint N, enable_if_t<(N > MaxStaticHashLen + 1), int> = 0>
+template<typename K, uint N, std::enable_if_t<(N > MaxStaticHashLen + 1), int> = 0>
 constexpr static auto strh(const K(&value)[N]) {
     return StoreType<K> { { value, N - 1 }, fnv_hash(value, N - 1)};
 }
 
-template<typename K, uint N, enable_if_t<(N > MaxStaticHashLen + 1), int> = 0>
+template<typename K, uint N, std::enable_if_t<(N > MaxStaticHashLen + 1), int> = 0>
 constexpr static auto strhia(const K(&value)[N]) {
     return StoreType<K> { { value, N - 1 }, unicode_traits<K>::hashia(value, N - 1)};
 }
 
-template<typename K, uint N, enable_if_t<N <= MaxStaticHashLen + 1, int> = 0>
+template<typename K, uint N, std::enable_if_t<N <= MaxStaticHashLen + 1, int> = 0>
 constexpr static auto strh(const K(&value)[N]) {
     return StoreType<K> { {value, N - 1 }, get_hash(value)};
 }
 
-template<typename K, uint N, enable_if_t<N <= MaxStaticHashLen + 1, int> = 0>
+template<typename K, uint N, std::enable_if_t<N <= MaxStaticHashLen + 1, int> = 0>
 constexpr static auto strhia(const K(&value)[N]) {
     return StoreType<K> { {value, N - 1 }, get_hash_ia(value)};
 }
@@ -2477,24 +2500,25 @@ constexpr static auto strhia(const K(&value)[N]) {
 * Как unordered_map, но чуть лучше. В качестве ключей хранит SimpleStr вместе с посчитанным хешем.
 * Чтобы SimpleStr было на что ссылатся, строковые значения ключей кладёт в список,
 * с ключом запоминает позицию в списке. При удалении ключа удаляет и из списка.
-* Позволяет для поиска использовать строковые литералы, не создавая для них объекта sstring.
-* Начиная с С++20 в unordered_map появилась возможность для поиска по ключу с типом, отличным от типа
-* хранящегося ключа, но у нас С++17. Да и там скорее всего хэш тоже не хранит, каждый раз вычисляя заново.
+* Позволяет использовать для поиска строковые литералы, не создавая для них объекта sstring.
+* Начиная с С++20 в unordered_map появилась возможность для гетерогенного поиска по ключу с типом, отличным от типа
+* хранящегося ключа. Однако удаление по прежнему только по типу ключа, что сводит на нет улучшения.
+* Да и хэш тоже не хранит, каждый раз вычисляя заново.
 */
-template<typename K, typename T, typename H = hash<StoreType<K>>, typename E = equal_to<StoreType<K>>>
+template<typename K, typename T, typename H, typename E>
 class hashStrMap {
 protected:
     using InStore = StoreType<K>;
     using list_t = typename InStore::list_t;
-    unordered_map<InStore, T, H, E> hashStore;
+    std::unordered_map<InStore, T, H, E> hashStore;
     list_t strings;
 public:
     using hasher = H;
-    using hash_t = unordered_map<InStore, T, H, E>;
+    using hash_t = std::unordered_map<InStore, T, H, E>;
     // При входе хэш должен быть уже посчитан
     template<typename...ValArgs>
     auto emplace(const StoreType<K>& key, ValArgs&&... args) {
-        auto it = hashStore.try_emplace(key, forward<ValArgs>(args)...);
+        auto it = hashStore.try_emplace(key, std::forward<ValArgs>(args)...);
         if (it.second) {
             InStore& stored = const_cast<InStore&>(it.first->first);
             stored.str.str = strings.emplace_back(key.str).c_str();
@@ -2504,20 +2528,40 @@ public:
     }
     template<typename...ValArgs>
     auto emplace(const SimpleStr<K>& key, ValArgs&&... args) {
-        return emplace(StoreType<K>{ key, H{}(key) }, forward<ValArgs>(args)...);
+        return emplace(StoreType<K>{ key, H{}(key) }, std::forward<ValArgs>(args)...);
     }
     template<typename...ValArgs>
+    auto emplace(const sstring<K>& key, ValArgs&&... args) {
+        auto it = hashStore.try_emplace(StoreType<K>{ key.to_str(), H{}(key)}, std::forward<ValArgs>(args)...);
+        if (it.second) {
+            InStore& stored = const_cast<InStore&>(it.first->first);
+            stored.str.str = strings.emplace_back(key);
+            new (stored.node) typename InStore::str_it_node(--strings.end());
+        }
+        return it;
+    }
+
+    template<typename...ValArgs>
     auto emplace_or_assign(const StoreType<K>& key, ValArgs&&... args) {
-        auto it = emplace(key, forward<ValArgs>(args)...);
+        auto it = emplace(key, std::forward<ValArgs>(args)...);
         if (!it.second) {
             it.first->second.T::~T();
-            new (&it.first->second) T(forward<ValArgs>(args)...);
+            new (&it.first->second) T(std::forward<ValArgs>(args)...);
         }
         return it;
     }
     template<typename...ValArgs>
     auto emplace_or_assign(const SimpleStr<K>& key, ValArgs&&... args) {
-        return emplace_or_assign(StoreType<K>{ key, H{}(key) }, forward<ValArgs>(args)...);
+        return emplace_or_assign(StoreType<K>{ key, H{}(key) }, std::forward<ValArgs>(args)...);
+    }
+    template<typename...ValArgs>
+    auto emplace_or_assign(const sstring<K>& key, ValArgs&&... args) {
+        auto it = emplace(key, std::forward<ValArgs>(args)...);
+        if (!it.second) {
+            it.first->second.T::~T();
+            new (&it.first->second) T(std::forward<ValArgs>(args)...);
+        }
+        return it;
     }
     auto find(const StoreType<K>& key) const {
         return hashStore.find(key);
@@ -2653,3 +2697,5 @@ using hashStrMapUIU = hashStrMap<u32symbol, T, strhashiu<u32symbol>, streqliu<u3
 static_assert(sizeof(sstring<u8symbol>) == sizeof(u8symbol*));
 
 constexpr const SimpleStrNt<u8symbol> utf8_bom{ "\xEF\xBB\xBF", 3};
+
+}// namespace coreas_str {

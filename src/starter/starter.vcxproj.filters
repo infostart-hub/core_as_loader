@@ -40,6 +40,7 @@
     <ClInclude Include="VersionInfo.h">
       <Filter>03 Прочее</Filter>
     </ClInclude>
+    <ClInclude Include="debugdump.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="starter.cpp">
@@ -56,6 +57,9 @@
     </ClCompile>
     <ClCompile Include="VersionInfo.cpp">
       <Filter>03 Прочее</Filter>
+    </ClCompile>
+    <ClCompile Include="debugdump.cpp">
+      <Filter>01 Основные</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

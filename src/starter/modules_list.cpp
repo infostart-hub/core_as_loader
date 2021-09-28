@@ -21,9 +21,9 @@ char* pListMap;
 
 struct LoadModuleInfo {
     LoadModuleInfo() = default;
-    LoadModuleInfo(stringw&& mn, vector<stringw>&& pr) : moduleName(mn), processes(pr) {}
+    LoadModuleInfo(stringw&& mn, std::vector<stringw>&& pr) : moduleName(mn), processes(pr) {}
     stringw moduleName;
-    vector<stringw> processes;
+    std::vector<stringw> processes;
     stringw testLib;
     stringw testFunc;
     stringw args;
@@ -34,35 +34,35 @@ stringw parseArguments(ssw args) {
     return stringw{ eew & e_repl(lstringw<500>::join(core_as_parseArguments(args), L"\v").to_str(), L"\"\"", L"\"") };
 }
 
-void processFile(const wchar_t* filePath, vector<LoadModuleInfo>& modules) {
+void processFile(const wchar_t* filePath, std::vector<LoadModuleInfo>& modules) {
     lstringw<0x200> sectionNames{ [filePath](wchar_t* p, unsigned s) {
         return grow2(GetPrivateProfileString(NULL, NULL, NULL, p, s + 1, filePath), s - 1);
     } };
     lstringsw<0x200> buffer;
     
-    for (const wchar_t* section = sectionNames; *section; section += char_traits<u16symbol>::length(section) + 1) {
+    for (const wchar_t* section = sectionNames; *section; section += std::char_traits<u16symbol>::length(section) + 1) {
         buffer << [&](wchar_t* p, uint s) {
             return grow2(GetPrivateProfileString(section, L"modul", NULL, p, s + 1, filePath), s);
         };
         if (!buffer)
             continue;
-        stringw modulName{ move(buffer) };
+        stringw modulName{ std::move(buffer) };
 
         auto procList = (buffer << [&](wchar_t* p, uint s) {
             return grow2(GetPrivateProfileString(section, L"proc", NULL, p, s + 1, filePath), s);
-            }).splitf<vector<stringw>>(L",", trim_w{});
+            }).splitf<std::vector<stringw>>(L",", trim_w{});
         
         if (procList.empty())
             continue;
 
-        LoadModuleInfo info{ move(modulName), move(procList) };
+        LoadModuleInfo info{ std::move(modulName), std::move(procList) };
 
         auto lib = (buffer << [&](wchar_t* p, uint s) {
             return grow2(GetPrivateProfileString(section, L"test", NULL, p, s + 1, filePath), s);
-            }).splitf<vector<stringw>>(L",", trim_w{});
+            }).splitf<std::vector<stringw>>(L",", trim_w{});
         if (lib.size() == 2) {
-            info.testLib = move(lib[0]);
-            info.testFunc = move(lib[1]);
+            info.testLib = std::move(lib[0]);
+            info.testFunc = std::move(lib[1]);
         }
         
         info.args = parseArguments(buffer << [&](wchar_t* p, uint s) {
@@ -71,7 +71,7 @@ void processFile(const wchar_t* filePath, vector<LoadModuleInfo>& modules) {
         info.defs = parseArguments(buffer << [&](wchar_t* p, uint s) {
             return grow2(GetPrivateProfileString(section, L"defs", NULL, p, s, filePath), s);
             });
-        modules.emplace_back(move(info));
+        modules.emplace_back(std::move(info));
     }
 }
 
@@ -84,7 +84,7 @@ void storeA(char*& ptr, const stringw& s) {
         *ptr++ = 0;
 }
 
-bool layoutListToMemory(const vector<LoadModuleInfo>& modules) {
+bool layoutListToMemory(const std::vector<LoadModuleInfo>& modules) {
     DWORD size = 8 + sizeof(HWND) + sizeof(LoadModulesData) * (DWORD) modules.size();
 
     for (const auto& m: modules) {
@@ -144,7 +144,7 @@ bool prepareModulesList() {
     WIN32_FIND_DATA fnd;
     HANDLE hFnd = FindFirstFile(path, &fnd);
     if (INVALID_HANDLE_VALUE != hFnd) {
-        vector<LoadModuleInfo> modules;
+        std::vector<LoadModuleInfo> modules;
         do {
             processFile(path.assign(+myFolder & L"load\\" & e_s(fnd.cFileName)), modules);
         } while (FindNextFile(hFnd, &fnd));

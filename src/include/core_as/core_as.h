@@ -4,6 +4,7 @@
 */
 #include "sstring.h"
 #pragma once
+using namespace coreas_str;
 
 class CoreAsModule {
 protected:
@@ -33,13 +34,13 @@ public:
     template<LogLevel LL, typename T, typename...A>
     void log(const u8symbol* format, T&& arg1, A&&...args) {
         if (currentLogLevel >= LL)
-            doLog(LL, lstringa<300>().s_format(format, forward<T>(arg1), forward<A>(args)...));
+            doLog(LL, lstringa<300>().s_format(format, std::forward<T>(arg1), std::forward<A>(args)...));
     }
     
     template<LogLevel LL, typename T, typename...A>
     void log(const u16symbol* format, T&& arg1, A&&...args) {
         if (currentLogLevel >= LL)
-            doLog(LL, lstringw<300>().s_format(format, forward<T>(arg1), forward<A>(args)...));
+            doLog(LL, lstringw<300>().s_format(format, std::forward<T>(arg1), std::forward<A>(args)...));
     }
 
     template<LogLevel LL>
@@ -54,12 +55,12 @@ public:
             doLog(LL, msg);
     }
 
-    template<LogLevel LL, typename A, enable_if_t<is_same_v<typename A::symb_type, char>, int> = 0>
+    template<LogLevel LL, typename A, std::enable_if_t<std::is_same_v<typename A::symb_type, char>, int> = 0>
     void log(const strexpr<A>& expr) {
         if (currentLogLevel >= LL)
             doLog(LL, lstringa<300>(expr));
     }
-    template<LogLevel LL, typename A, enable_if_t<is_same_v<typename A::symb_type, u16symbol>, int> = 0>
+    template<LogLevel LL, typename A, std::enable_if_t<std::is_same_v<typename A::symb_type, u16symbol>, int> = 0>
     void log(const strexpr<A>& expr) {
         if (currentLogLevel >= LL)
             doLog(LL, lstringw<300>(expr));
@@ -80,4 +81,4 @@ struct LibInitInterface {
 };
 
 extern "C" COREAS_API CoreAsModule* core_as_getModule(const wchar_t* moduleName, const wchar_t* moduleFolder = nullptr);
-COREAS_API vector<ssw> core_as_parseArguments(ssw args);
+COREAS_API std::vector<ssw> core_as_parseArguments(ssw args);

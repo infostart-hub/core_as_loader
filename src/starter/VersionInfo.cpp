@@ -38,7 +38,7 @@ void VersionInfo::init(HINSTANCE hInst, BOOL bFull) {
         FreeResource(hData);
         return;
     }
-    unique_ptr<char> updata(new char[dwSize]);
+    std::unique_ptr<char> updata(new char[dwSize]);
     char* m_pData = updata.get();
     memcpy(m_pData, pData, dwSize);
     UnlockResource(hData);
@@ -99,7 +99,7 @@ void VersionInfo::init(HINSTANCE hInst, BOOL bFull) {
                     pText = reinterpret_cast<wchar_t*>((reinterpret_cast<size_t>(pText) + 3) & ~3);
                 } else
                     pText = nullptr;
-                pBlock->Names2Vals.emplace(move(key), e_s(pText));
+                pBlock->Names2Vals.emplace(std::move(key), e_s(pText));
                 pString = reinterpret_cast<VS_BASE*>((reinterpret_cast<size_t>(pString) + pString->wLength + 3) & ~3);
             }
             pTable = reinterpret_cast<StringTable*>((reinterpret_cast<size_t>(pTable) + pTable->wLength + 3) & ~3);
