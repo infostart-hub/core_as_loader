@@ -215,7 +215,8 @@ void processStopInject() {
         inject_unhook();
         if (h64Write) {
             char cmd = icUnhook;
-            WriteFile(h64Write, &cmd, 1, 0, 0);
+            DWORD w;
+            WriteFile(h64Write, &cmd, 1, &w, 0);
         }
         isInjected = false;
         processBroadCast(lstringw<100>(+L"starter\v"_ss & (size_t)hMainWnd & L"\vinject=0"));
@@ -234,7 +235,8 @@ void processResumeInject() {
         inject_hook();
         if (h64Write) {
             char cmd = icHook;
-            WriteFile(h64Write, &cmd, 1, 0, 0);
+            DWORD w;
+            WriteFile(h64Write, &cmd, 1, &w, 0);
         }
         isInjected = true;
         processBroadCast(lstringw<100>(+L"starter\v"_ss & (size_t) hMainWnd & L"\vinject=1"));

@@ -4,7 +4,6 @@
 */
 #include "pch.h"
 
-#ifdef _DEBUG
 #include <Dbghelp.h>
 
 typedef BOOL(WINAPI* MINIDUMPWRITEDUMP) (HANDLE,
@@ -54,5 +53,3 @@ void initLastDump() {
     AddVectoredExceptionHandler(1, TopLevelFilter);
     SetUnhandledExceptionFilter(TopLevelFilter);
 }
-
-#endif

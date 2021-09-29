@@ -114,19 +114,13 @@ constexpr static auto operator & (const strexpr<A>& a, const K(&s)[N]) {
     return strexpr<J>{J{ a.a, L { s } }};
 }
 
-template<typename K, size_t N>
-static auto e_c(const K(&s)[N]) {
-    using J = expr_literal<K, static_cast<uint>(N - 1)>;
-    return strexpr<J>{J{ s }};
-}
-
 template<typename K, uint N, uint S = ' '>
 struct expr_spaces {
     using symb_type = K;
     constexpr uint length() const noexcept { return N; }
     constexpr symb_type* place(symb_type* p) const noexcept {
         if constexpr (N != 0)
-            char_traits<K>::assign(p, N, static_cast<K>(S));
+            std::char_traits<K>::assign(p, N, static_cast<K>(S));
         return p + N;
     }
 };
