@@ -1812,7 +1812,7 @@ public:
         return *this;
     }
     my_type& operator = (my_type&& other) {
-        return assign(move(other));
+        return assign(std::move(other));
     }
 
     my_type& operator = (const SimpleStr<K>& other) {
