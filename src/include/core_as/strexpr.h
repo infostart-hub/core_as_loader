@@ -46,6 +46,7 @@ struct strexpr {
     A a;
     constexpr uint length() const noexcept { return a.length(); }
     constexpr symb_type* place(symb_type* p) const noexcept { return a.place(p); }
+    constexpr void len_and_place(symb_type* p) const noexcept { a.length(); a.place(p); }
 };
 
 template<typename A, typename B>

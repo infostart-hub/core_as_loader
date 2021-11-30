@@ -571,9 +571,9 @@ struct SimpleStr : str_algs<K, SimpleStr<K>, SimpleStr<K> > {
     SimpleStr() = default;
     
     template<uint N>
-    constexpr SimpleStr(const K(&v)[N]) : str(v), len(N - 1) {}
+    constexpr SimpleStr(const K(&v)[N]) noexcept : str(v), len(N - 1) {}
     
-    constexpr SimpleStr(const K* p, uint l) : str(p), len(l) {}
+    constexpr SimpleStr(const K* p, uint l) noexcept : str(p), len(l) {}
 
     constexpr uint length() const noexcept {
         return len;
@@ -611,10 +611,10 @@ struct SimpleStrNt : SimpleStr<K> {
     using base::base;
 
     constexpr static const K empty_string[1] = { 0 };
-    static my_type from_pointer(const K* p) {
+    static my_type from_pointer(const K* p) noexcept {
         return my_type{ p ? p : empty_string, p ? static_cast<uint>(base::traits::length(p)) : 0 };
     }
-    constexpr static my_type null() { return my_type{ empty_string, 0 }; }
+    constexpr static my_type null() noexcept { return my_type{ empty_string, 0 }; }
     operator const K* () const noexcept {
         return base::str;
     }
@@ -636,15 +636,15 @@ constexpr static auto operator & (const strexpr<A>& a, const SimpleStr<typename 
     return strexpr<J>{J{ a.a, s }};
 }
 
-constexpr static auto operator "" _ss(const u8symbol* p, size_t l) {
+constexpr static auto operator "" _ss(const u8symbol* p, size_t l) noexcept {
     return SimpleStrNt<u8symbol>{p, static_cast<uint>(l) };
 }
 
-constexpr static auto operator "" _ss(const u16symbol* p, size_t l) {
+constexpr static auto operator "" _ss(const u16symbol* p, size_t l) noexcept {
     return SimpleStrNt<u16symbol>{p, static_cast<uint>(l) };
 }
 
-constexpr static auto operator "" _ss(const u32symbol* p, size_t l) {
+constexpr static auto operator "" _ss(const u32symbol* p, size_t l) noexcept {
     return SimpleStrNt<u32symbol>{p, static_cast<uint>(l) };
 }
 
@@ -1689,7 +1689,18 @@ struct SharedStringData {
     void decr() { if (!--counter) core_as_free(this); }
 };
 
-template<typename K, uint N, bool forShared = false> struct expr_lstr;
+template<typename T>
+struct expr_strref {
+    const T& t;
+    using symb_type = typename T::symb_type;
+    // Работа с strexpr
+    constexpr uint length() const noexcept {
+        return t.length();
+    }
+    constexpr symb_type* place(symb_type* ptr) const noexcept {
+        return t.place(ptr);
+    }
+};
 
 /*
 * Локальная строка. Хранит в себе длину строки, а за ней либо сами данные до N символов + нуль,
@@ -1702,13 +1713,13 @@ template<typename K, uint N, bool forShared = false> struct expr_lstr;
 */
 template<typename K, uint N, bool forShared = false>
 class empty_bases lstring :
-    public str_algs<K, SimpleStr<K>, lstring<K, N, forShared>, expr_lstr<K, N, forShared>>,
+    public str_algs<K, SimpleStr<K>, lstring<K, N, forShared>, expr_strref<lstring<K, N, forShared>>>,
     public str_storeable<K, lstring<K, N, forShared>>,
     public str_mutable<K, SimpleStr<K>, lstring<K, N, forShared>>,
     public from_utf_convertable<K, lstring<K, N, forShared>>
 {
     constexpr static uint extra = forShared ? sizeof(SharedStringData) : 0;
-    using base_algs = str_algs<K, SimpleStr<K>, lstring<K, N, forShared>, expr_lstr<K, N, forShared>>;
+    using base_algs = str_algs<K, SimpleStr<K>, lstring<K, N, forShared>, expr_strref<lstring<K, N, forShared>>>;
     using base_store = str_storeable<K, lstring<K, N, forShared>>;
     using base_mutable = str_mutable<K, SimpleStr<K>, lstring<K, N, forShared>>;
     using base_utf = from_utf_convertable<K, lstring<K, N, forShared>>;
@@ -1762,6 +1773,8 @@ public:
     using base_store::base_store;
     using base_utf::base_utf;
     using symb_type = K;
+
+    constexpr static uint forSize(uint I) { return I - 1 - offsetof(my_type, buffer.local); }
     
     lstring() = default;
 
@@ -1773,15 +1786,15 @@ public:
         if (other.size)
             traits::copy(reserve(other.size), other.c_str(), other.size + 1);
     }
-    // Перемещени е из другой строки с таким же размером буфера
+    // Перемещение из другой строки с таким же размером буфера
     lstring(my_type&& other) {
         if (other.size) {
             if (other.size > N) {
                 size = other.size;
                 buffer.big = other.buffer.big;
-                other.size = 0;
             } else
                 traits::copy(reserve(other.size), other.c_str(), other.size + 1);
+            other.size = 0;
         }
     }
     // Копирование из строки другого размера
@@ -1793,7 +1806,7 @@ public:
     }
 
     template<typename Op, std::enable_if_t<std::is_invocable_v<Op, K*, uint> || std::is_invocable_v<Op, my_type&>, int> = 0>
-    lstring(const Op& op) {
+    lstring(const Op& op) : size(0) {
         this->operator<<(op);
     }
 
@@ -1903,7 +1916,7 @@ public:
         K* start = str();
         for (K* ptr = start, *end = start + capacity(); ptr < end; ptr++) {
             if (*ptr == 0) {
-                size = ptr - start;
+                size = static_cast<uint>(ptr - start);
                 return;
             }
         }
@@ -1917,26 +1930,11 @@ template<uint N> using lstringw = lstring<u16symbol, N>;
 template<uint N> using lstringsa = lstring<u8symbol, N, true>;
 template<uint N> using lstringsw = lstring<u16symbol, N, true>;
 
-template<typename K, uint N, bool S>
-struct expr_lstr {
-    using symb_type = K;
-    const lstring<K, N, S>& a;
-    // Работа с strexpr
-    constexpr uint length() const noexcept {
-        return a.length();
-    }
-    constexpr symb_type* place(symb_type* ptr) const noexcept {
-        return a.place(ptr);
-    }
-};
-
 template<typename A, uint N, bool S>
 constexpr static auto operator & (const strexpr<A>& a, const lstring<typename A::symb_type, N, S>& s) {
-    using J = strexprjoin<A, expr_lstr<typename A::symb_type, N, S>>;
+    using J = strexprjoin<A, expr_strref<lstring<typename A::symb_type, N, S>>>;
     return strexpr<J>{J{ a.a, s }};
 }
-
-template<typename K> struct expr_sstring;
 
 // Реализация разделямых строк.
 // Объект "строка" состоит из двух "частей" - сам объект sstring, в котором просто
@@ -1960,12 +1958,12 @@ template<typename K> struct expr_sstring;
 
 template<typename K>
 class empty_bases sstring :
-    public str_algs<K, SimpleStr<K>, sstring<K>, expr_sstring<K>>,
+    public str_algs<K, SimpleStr<K>, sstring<K>, expr_strref<sstring<K>>>,
     public str_storeable<K, sstring<K>>,
     public from_utf_convertable<K, sstring<K>> 
 {
 protected:
-    using base_algs = str_algs<K, SimpleStr<K>, sstring<K>, expr_sstring<K>>;
+    using base_algs = str_algs<K, SimpleStr<K>, sstring<K>, expr_strref<sstring<K>>>;
     using base_store = str_storeable<K, sstring<K>>;
     using base_utf = from_utf_convertable<K, sstring<K>>;
 
@@ -2086,9 +2084,10 @@ public:
     }
 
     // Операции по переприсваиванию строки. Переприсваивая строку важно осознавать, что
-    // это делать небезопасно, если в других потоках имеется ссылка на конкретно этот
-    // объект. Другие объекты, ссылающиеся на тот же буфер строки, что и этот - опасности не
-    // создают и этой оперцией затронуты не будут.
+    // это делать небезопасно, если в других потоках имеется конкурентный доступ именно к
+    // этому объекту, и должно ограждаться какими-либо способами синхронизации.
+    // Другие объекты, ссылающиеся на тот же буфер строки, что и этот - опасности не
+    // создают и этой операцией затронуты не будут.
     my_type& operator = (const my_type& other) noexcept {
         return assign(other);
     }
@@ -2102,7 +2101,7 @@ public:
     my_type& operator = (const strexpr<A>& expr) {
         return assign(expr);
     }
-    my_type& empty() {
+    my_type& makeEmpty() {
         this->sstring::~sstring();
         new (this) my_type();
         return *this;
@@ -2128,17 +2127,9 @@ public:
     }
 };
 
-template<typename K>
-struct expr_sstring {
-    using symb_type = K;
-    const sstring<K>& a;
-    constexpr uint length() const noexcept { return a.length(); }
-    constexpr symb_type* place(symb_type* p) const noexcept { return a.place(p); }
-};
-
 template<typename A>
 constexpr static auto operator & (const strexpr<A>& a, const sstring<typename A::symb_type>& s) {
-    using J = strexprjoin<A, expr_sstring<typename A::symb_type>>;
+    using J = strexprjoin<A, expr_strref<sstring<typename A::symb_type>>>;
     return strexpr<J>{ J{ a.a, s } };
 }
 
@@ -2279,24 +2270,26 @@ struct expr_lst {
         return l - (l != 0 && !tail ? I : 0);
     }
     constexpr K* place(K* ptr) const noexcept {
-        for (auto t = s.begin(), e = s.end(); ;) {
-            uint copyLen = t->length();
-            if (copyLen) {
-                char_traits<K>::copy(ptr, t->c_str(), copyLen);
-                ptr += copyLen;
-            }
-            ++t;
-            if (t == e) {
-                // Последний элемент контейнера
-                if constexpr (I > 0 && tail) {
-                    char_traits<K>::copy(ptr, delim, I);
+        if (!s.empty()) {
+            for (auto t = s.begin(), e = s.end(); ;) {
+                uint copyLen = t->length();
+                if (copyLen) {
+                    std::char_traits<K>::copy(ptr, t->c_str(), copyLen);
+                    ptr += copyLen;
+                }
+                ++t;
+                if (t == e) {
+                    // Последний элемент контейнера
+                    if constexpr (I > 0 && tail) {
+                        std::char_traits<K>::copy(ptr, delim, I);
+                        ptr += I;
+                    }
+                    break;
+                }
+                if constexpr (I > 0) {
+                    std::char_traits<K>::copy(ptr, delim, I);
                     ptr += I;
                 }
-                break;
-            }
-            if constexpr (I > 0) {
-                char_traits<K>::copy(ptr, delim, I);
-                ptr += I;
             }
         }
         return ptr;
@@ -2394,59 +2387,6 @@ constexpr static auto e_choice(bool c, const A& a, const B& b) {
     return expr_choice<A, B> {a, b, c};
 }
 
-template<size_t ... Is>
-constexpr auto indexSequenceReverse(std::index_sequence<Is...> const&) -> decltype(std::index_sequence<sizeof...(Is)-1U-Is...>{});
-template <size_t N>
-using makeIndexSequenceReverse = decltype(indexSequenceReverse(std::make_index_sequence<N>{}));
-
-template<typename K>
-static size_t fnv_hash(const K* ptr, uint l) {
-    size_t h = std::_FNV_offset_basis;
-    while (l--)
-        h = (h ^ *ptr++) * std::_FNV_prime;
-    return h;
-}
-
-template<typename K>
-constexpr size_t fnv_hash() {
-    return std::_FNV_offset_basis;
-};
-
-template<typename K, typename... Chars>
-constexpr size_t fnv_hash(K symb, Chars... chrs) {
-    return (fnv_hash<K>(chrs...) ^ symb) * std::_FNV_prime;
-};
-
-template <typename K, size_t N, size_t... Indexes>
-constexpr auto HashFactory(const K(&value)[N], std::index_sequence<Indexes...> dummy) {
-    return fnv_hash<K>(value[Indexes]...);
-}
-
-template<typename K, uint N>
-constexpr static auto get_hash(const K(&value)[N]) {
-    return HashFactory(value, makeIndexSequenceReverse<N - 1> {});
-}
-
-template<typename K>
-constexpr size_t fnv_hash_ia() {
-    return std::_FNV_offset_basis;
-};
-
-template<typename K, typename... Chars>
-constexpr size_t fnv_hash_ia(K symb, Chars... chrs) {
-    return (fnv_hash_ia<K>(chrs...) ^ (symb >='A' && symb <= 'Z' ? symb | 0x20 : symb)) * std::_FNV_prime;
-};
-
-template <typename K, size_t N, size_t... Indexes>
-constexpr auto HashFactory_ia(const K(&value)[N], std::index_sequence<Indexes...> dummy) {
-    return fnv_hash_ia<K>(value[Indexes]...);
-}
-
-template<typename K, uint N>
-constexpr static auto get_hash_ia(const K(&value)[N]) {
-    return HashFactory_ia(value, makeIndexSequenceReverse<N - 1> {});
-}
-
 template<typename K>
 struct StoreType {
     using list_t = std::list<sstring<K>>;
@@ -2468,32 +2408,69 @@ using HashKeyA = StoreType<u8symbol>;
 using HashKeyW = StoreType<u16symbol>;
 using HashKeyU = StoreType<u32symbol>;
 
-// Путем эксперементов выяснилось, что для константных строковых литералов до такой длины
-// компилятор может вычислить хеш на этапе компиляции и сразу подставить константу,
-// для более длинных строк - нет, а разворачивает в вызов функции, а потом инлайнит всю рекурсию.
-// Получается нехорошо. Поэтому для более длинных строк будем задавать более простое вычисление хеша
-// в рантайме. Не используйте столь длинные строки как прекомпиленные ключи поиска.
-constexpr static const size_t MaxStaticHashLen = 31;
+template<typename K>
+constexpr static size_t fnv_hash(const K* ptr, uint l) {
+    size_t h = std::_FNV_offset_basis;
+    while (l--)
+        h = (h ^ *ptr++) * std::_FNV_prime;
+    return h;
+};
 
-template<typename K, uint N, std::enable_if_t<(N > MaxStaticHashLen + 1), int> = 0>
+template<typename K>
+constexpr static size_t fnv_hash_ia(const K* ptr, uint l) {
+    size_t h = std::_FNV_offset_basis;
+    while (l--) {
+        K s = *ptr++;
+        h = (h ^ (s >= 'A' && s <= 'Z' ? s | 0x20 : s)) * std::_FNV_prime;
+    }
+    return h;
+};
+
+/*
+* Вычисление хешей строк во время компиляции.
+*/
+
+template<typename K, uint N>
+constexpr static size_t fnv_hash(const K(&value)[N]) {
+    size_t h = std::_FNV_offset_basis;
+    for (uint i = 0; i < N - 1; i++)
+        h = (h ^ value[i]) * std::_FNV_prime;
+    return h;
+};
+
+template<typename K, uint N>
+constexpr static size_t fnv_hash_ia(const K(&value)[N]) {
+    size_t h = std::_FNV_offset_basis;
+    for (uint i = 0; i < N - 1; i++)
+        h = (h ^ (value[i] >= 'A' && value[i] <= 'Z' ? value[i] | 0x20 : value[i])) * std::_FNV_prime;
+    return h;
+};
+
+/*
+ * Данный шаблон используется для форсирования вычисления хэша именно во время компиляции,
+ * так как если просто использовать вызов constexpr функции, то начиная с определенной
+ * длинны строки(компилятор VC2019 с 32 символов) вставляет в код заинлайненный вызов
+ * функции.
+ */
+
+template<size_t I> struct hhh { constexpr static const size_t val = I; };
+
+/*
+template<typename K, uint N>
 constexpr static auto strh(const K(&value)[N]) {
-    return StoreType<K> { { value, N - 1 }, fnv_hash(value, N - 1)};
+    return StoreType<K> { { value, N - 1 }, hhh<fnv_hash(value)>::val};
 }
+*/
 
-template<typename K, uint N, std::enable_if_t<(N > MaxStaticHashLen + 1), int> = 0>
+#define strh(Val) StoreType<decltype(getLiteralType(Val))> {{Val, (sizeof(Val) / sizeof(Val[0])) - 1}, hhh<fnv_hash(Val)>::val}
+
+/*
+template<typename K, uint N>
 constexpr static auto strhia(const K(&value)[N]) {
-    return StoreType<K> { { value, N - 1 }, unicode_traits<K>::hashia(value, N - 1)};
+    return StoreType<K> { { value, N - 1 }, hhh<fnv_hash_ia(value)>::val};
 }
-
-template<typename K, uint N, std::enable_if_t<N <= MaxStaticHashLen + 1, int> = 0>
-constexpr static auto strh(const K(&value)[N]) {
-    return StoreType<K> { {value, N - 1 }, get_hash(value)};
-}
-
-template<typename K, uint N, std::enable_if_t<N <= MaxStaticHashLen + 1, int> = 0>
-constexpr static auto strhia(const K(&value)[N]) {
-    return StoreType<K> { {value, N - 1 }, get_hash_ia(value)};
-}
+*/
+#define strhia(Val) StoreType<decltype(getLiteralType(Val))> {{Val, (sizeof(Val) / sizeof(Val[0])) - 1}, hhh<fnv_hash_ia(Val)>::val}
 
 /*
 * Контейнер для более эффективного поиска по строковым ключам.
@@ -2501,8 +2478,9 @@ constexpr static auto strhia(const K(&value)[N]) {
 * Чтобы SimpleStr было на что ссылатся, строковые значения ключей кладёт в список,
 * с ключом запоминает позицию в списке. При удалении ключа удаляет и из списка.
 * Позволяет использовать для поиска строковые литералы, не создавая для них объекта sstring.
-* Начиная с С++20 в unordered_map появилась возможность для гетерогенного поиска по ключу с типом, отличным от типа
-* хранящегося ключа. Однако удаление по прежнему только по типу ключа, что сводит на нет улучшения.
+* Начиная с С++20 в unordered_map появилась возможность для гетерогенного поиска по ключу с типом,
+* отличным от типа хранящегося ключа. Однако удаление по прежнему только по типу ключа,
+* что сводит на нет улучшения.
 * Да и хэш тоже не хранит, каждый раз вычисляя заново.
 */
 template<typename K, typename T, typename H, typename E>
@@ -2513,6 +2491,12 @@ protected:
     std::unordered_map<InStore, T, H, E> hashStore;
     list_t strings;
 public:
+    hashStrMap() = default;
+    hashStrMap(std::initializer_list<std::pair<StoreType<K>, T>> init) {
+        for (const auto& e : init)
+            emplace(e.first, e.second);
+    }
+
     using hasher = H;
     using hash_t = std::unordered_map<InStore, T, H, E>;
     // При входе хэш должен быть уже посчитан
@@ -2587,6 +2571,12 @@ public:
     auto erase(const SimpleStr<K>& key) {
         return erase(StoreType<K> { key, H{}(key) });
     }
+    auto begin() {
+        return hashStore.begin();
+    }
+    auto end() {
+        return hashStore.end();
+    }
     auto begin() const {
         return hashStore.begin();
     }
@@ -2613,8 +2603,8 @@ public:
         return hashStore.size();
     }
     void clear() {
-        hashStore.clear();
         strings.clear();
+        hashStore.clear();
     }
 };
 
@@ -2645,7 +2635,7 @@ struct streqlia {
 template<typename K>
 struct strhashia {
     size_t operator()(const SimpleStr<K>& _Keyval) const {
-        return unicode_traits<K>::hashia(_Keyval.c_str(), _Keyval.length());
+        return fnv_hash_ia(_Keyval.c_str(), _Keyval.length());
     }
     size_t operator()(const StoreType<K>& _Keyval) const {
         return _Keyval.hash;
@@ -2666,6 +2656,116 @@ struct strhashiu {
     }
     size_t operator()(const StoreType<K>& _Keyval) const {
         return _Keyval.hash;
+    }
+};
+
+/*
+* Для построения длинных динамических строк конкатенацией мелких кусочков.
+* Выделяет по мере надобности отдельные блоки заданного размера (или кратного ему для больших вставок),
+* чтобы избежать релокации длинных строк.
+* После построения можно слить в одну строку
+*/
+template<typename K>
+class chunked_string_concatenator {
+    std::vector<std::pair<std::unique_ptr<K>, uint>> chunks;// блоки и длина данных в них
+    K* write{ nullptr }; // Текущая позиция записи
+    uint len{ 0 };// Общая длина
+    uint remain{ 0 }; // Сколько осталось места в текущем блоке
+    uint align{ 1024 };
+public:
+    using my_type = chunked_string_concatenator<K>;
+    using symb_type = K;
+    chunked_string_concatenator() = default;
+    chunked_string_concatenator(uint a) : align(a) {};
+    chunked_string_concatenator(const my_type&) = delete;
+    chunked_string_concatenator(my_type&& other) :
+        chunks(std::move(other.chunks)), write(other.write), len(other.len), remain(other.remain), align(other.align)  {
+        other.len = other.remain = 0;
+        other.write = nullptr;
+    }
+    my_type& operator = (my_type&& other) {
+        if (&other != this) {
+            this->~my_type();
+            new (this) my_type(std::move(other));
+        }
+        return *this;
+    }
+    // Добавление порции данных
+    my_type& operator << (ssa data) {
+        if (data.len) {
+            len += data.len;
+            if (data.len <= remain) {
+                // Добавляемые данные влезают в выделенный блок, просто скопируем их
+                std::char_traits<K>::copy(write, data.str, data.len);
+                write += data.len;// Сдвинем позицию  записи
+                chunks.back().second += data.len;// Увеличим длину хранимых в блоке данных
+                remain -= data.len;// Уменьшим остаток места в блоке
+            } else {
+                // Не влезают
+                if (remain) {
+                    // Сначала запишем сколько влезет
+                    std::char_traits<K>::copy(write, data.str, remain);
+                    data.len -= remain;
+                    data.str += remain;
+                    chunks.back().second += remain; // Увеличим длину хранимых в блоке данных
+                }
+                // Выделим новый блок и впишем в него данные
+                uint blockSize = (data.len + align - 1) / align * align;  // Рассчитаем размер блока, кратного заданному выравниванию
+                chunks.emplace_back(new char[blockSize], data.len);
+                write = chunks.back().first.get();
+                std::char_traits<K>::copy(write, data.str, data.len);
+                write += data.len;
+                remain = blockSize - data.len;
+            }
+        }
+        return *this;
+    }
+    template<typename A>
+    my_type& operator << (const strexpr<A>& expr) {
+        uint l = expr.length();
+        if (l) {
+            if (l < remain) {
+                write = expr.place(write);
+                chunks.back().second += l;
+                len += l;
+                remain -= l;
+            } else {
+                std::unique_ptr<char> store(new char[l]);
+                expr.place(store.get());
+                return operator<<(ssa{ store.get(), l });
+            }
+        }
+        return *this;
+    }
+    constexpr uint length() const noexcept { return len; }
+    constexpr K* place(K* p) const noexcept {
+        for (const auto& block: chunks) {
+            std::char_traits<K>::copy(p, block.first.get(), block.second);
+            p += block.second;
+        }
+        return p;
+    }
+    strexpr<expr_strref<my_type>> operator+() const { return strexpr<expr_strref<my_type>>{ { *this }}; }
+
+    template<typename Op>
+    void out(const Op& o) const {
+        for (const auto& block: chunks)
+            o(block.first.get(), block.second);
+    }
+
+    bool isContinuous() const {
+        if (chunks.size()) {
+            const char* ptr = chunks.front().first.get();
+            for (const auto& chunk : chunks) {
+                if (chunk.first.get() != ptr)
+                    return false;
+                ptr += chunk.second;
+            }
+        }
+        return true;
+    }
+    const K* begin() const {
+        return chunks.size() ? chunks.front().first.get() : nullptr;
     }
 };
 
