@@ -68,7 +68,7 @@ class StarterInterProcess {
             return;
         }
         hMyWnd = CreateWindowEx(0, "EDIT".cstr, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-        &&myWnd = attachWndToFunction(hMyWnd, WndFunc(this.wndFunc), array<uint> = { WM_SETTEXT });
+        &&myWnd = attachWndToFunction(hMyWnd, WndFunc(this.wndFunc), { WM_SETTEXT });
         sendMessageToStarter(smConnect, instanceName + "\xB" + hMyWnd);
     }
 

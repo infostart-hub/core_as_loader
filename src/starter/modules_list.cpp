@@ -140,13 +140,13 @@ bool layoutListToMemory(const std::vector<LoadModuleInfo>& modules) {
 }
 
 bool prepareModulesList() {
-    lstringw<MAX_PATH> path = +myFolder & L"load\\*.txt" ;
+    lstringw<MAX_PATH> path = myFolder & L"load\\*.txt" ;
     WIN32_FIND_DATA fnd;
     HANDLE hFnd = FindFirstFile(path, &fnd);
     if (INVALID_HANDLE_VALUE != hFnd) {
         std::vector<LoadModuleInfo> modules;
         do {
-            processFile(path.assign(+myFolder & L"load\\" & e_s(fnd.cFileName)), modules);
+            processFile(path.assign(myFolder & L"load\\" & e_s(fnd.cFileName)), modules);
         } while (FindNextFile(hFnd, &fnd));
         FindClose(hFnd);
         if (!modules.empty())

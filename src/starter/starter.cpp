@@ -79,10 +79,10 @@ void startInject64() {
     CreatePipe(&h64Read, &h64Write, &saAttr, 1);
     // Построим командную строку для запуска x64 процесса
     wchar_t winDir[MAX_PATH];
-    lstringw<MAX_PATH * 2 + 100> cmdLine(+L"\""_ss &
+    lstringw<MAX_PATH * 2 + 100> cmdLine{ L"\"" &
         ssw { winDir, GetWindowsDirectory(winDir, MAX_PATH) } &
         L"\\Sysnative\\rundll32.exe\" \"" & myFolder & L"lib\\x64\\inject.dll\" installHook " &
-        reinterpret_cast<size_t>(h64Read) & L" " & reinterpret_cast<size_t>(h64Write));
+        reinterpret_cast<size_t>(h64Read) & L" " & reinterpret_cast<size_t>(h64Write) };
     // Запускаем процесс
     STARTUPINFO si;
     si.cb = sizeof(si);
@@ -109,10 +109,14 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     UNREFERENCED_PARAMETER(lParam);
     switch (message) {
     case WM_INITDIALOG: {
-        uint64_t version = VersionInfo(hMyInst, FALSE).prodVersion();
-        SetDlgItemText(hDlg, IDC_VERSION, lstringw<100>().s_format(L"%i.%i.%i.%i",
-            uint(version >> 48), uint((version>> 32) & 0xFFFF),
-            uint((version>> 16) & 0xFFFF), uint(version & 0xFFFF)));
+        uint64_t version = VersionInfo{ hMyInst, FALSE }.prodVersion();
+        SetDlgItemText(hDlg, IDC_VERSION, lstringw<100>{eew & uint(version >> 48) & L"." &
+            uint((version >> 32) & 0xFFFF) & L"." & uint((version >> 16) & 0xFFFF) & L"." &
+            uint(version & 0xFFFF)
+        #ifdef _DEBUG
+            & L" (debug)"
+        #endif
+        });
         return (INT_PTR) TRUE;
     }
     case WM_COMMAND:
@@ -141,12 +145,14 @@ bool showNotify(ssw title, ssw msg) {
     nid.uFlags = NIF_INFO | NIF_SHOWTIP;
     nid.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON | NIIF_NOSOUND;
     if (title.isEmpty())
-        title = e_s(AppName);
+        title = AppName;
     title.copy_to(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]));
     msg.copy_to(nid.szInfo, sizeof(nid.szInfo) / sizeof(nid.szInfo[0]));
 
     LoadIconMetric(hMyInst, MAKEINTRESOURCE(IDI_STARTER), LIM_LARGE, &nid.hBalloonIcon);
-    return Shell_NotifyIcon(NIM_MODIFY, &nid);
+    Shell_NotifyIcon(NIM_MODIFY, &nid);
+    DWORD err = GetLastError();
+    return true;
 }
 
 enum StarterMessages {
@@ -175,7 +181,7 @@ void processInject(SimpleStrNtW msg) {
 
 // Ждем строку вида ИмяИнстанса\vHWND окна
 void processConnect(SimpleStrNtW msg) {
-    auto parts = msg.split<std::vector<ssw>>(L"\v"_ss);
+    auto parts = msg.split<std::vector<ssw>>(L"\v");
     if (parts.size() == 2) {
         HWND hWnd = (HWND)wcstol(parts[1].c_str(), nullptr, 0);
         if (IsWindow(hWnd))
@@ -194,7 +200,7 @@ void processDisconnect(SimpleStrNtW msg) {
 // Ждем строку вида Заголовок\vТекст
 void processShowNotify(SimpleStrNtW msg) {
     // Данные для показа уведомления идут в виде Заголовок\vТекст
-    auto txt = msg.split<std::vector<ssw>>(L"\v"_ss);
+    auto txt = msg.split<std::vector<ssw>>(L"\v");
     if (txt.size() == 2)
         showNotify(txt[0], txt[1]);
 }
@@ -219,7 +225,7 @@ void processStopInject() {
             WriteFile(h64Write, &cmd, 1, &w, 0);
         }
         isInjected = false;
-        processBroadCast(lstringw<100>(+L"starter\v"_ss & (size_t)hMainWnd & L"\vinject=0"));
+        processBroadCast(lstringw<100>{L"starter\v" & e_num<u16symbol>((size_t)hMainWnd) & L"\vinject=0"});
         // При снятии хука inject.dll выгружается из других процессов не сразу, а когда
         // через очередь сообщений потока с хуком пройдёт хотя бы одно сообщение.
         // И для некоторых процессов это ожидание может сильно затянутся. Поэтому при снятии хука
@@ -239,12 +245,12 @@ void processResumeInject() {
             WriteFile(h64Write, &cmd, 1, &w, 0);
         }
         isInjected = true;
-        processBroadCast(lstringw<100>(+L"starter\v"_ss & (size_t) hMainWnd & L"\vinject=1"));
+        processBroadCast(lstringw<100>{L"starter\v" & e_num<u16symbol>((size_t)hMainWnd) & L"\vinject=1"});
     }
 }
 
 void processLoadModule(ssw msg) {
-    coreModule->log<LogLevel::Info>(+L"Load module "_ss & msg);
+    coreModule->log<LogLevel::Info>(L"Load module " & msg);
 }
 
 void processMsgFromOther(const wchar_t* msg) {
@@ -443,6 +449,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int) {
     }
     DeleteNotificationIcon();
     processStopInject();
+    //coreModule->stop();
     return (int) msg.wParam;
 }
 

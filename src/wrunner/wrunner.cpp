@@ -13,6 +13,7 @@
 #include <locale>
 #include <clocale>
 #include <cwchar>
+#include <format>
 
 #include "core_as/core_as.h"
 void* operator new(size_t size) {
@@ -83,8 +84,10 @@ int run(const std::vector<ssw>& argv, HINSTANCE hInst, int nCmdShow) {
     CoreAsModule* pModule = core_as_getModule(modName, folder);
     if (!pModule)
         return 2;
-    commands.s_append(+L" hInst "_ss & size_t(hInst) & L" nCmdShow " & nCmdShow);
-    return pModule->run(commands, defines, GetStdHandle(STD_OUTPUT_HANDLE)) ? 0 : 1;
+    commands.s_append(eew & L" hInst " & size_t(hInst) & L" nCmdShow " & nCmdShow);
+    int ret = pModule->run(commands, defines, GetStdHandle(STD_OUTPUT_HANDLE)) ? 0 : 1;
+    pModule->stop();
+    return ret;
 }
 
 int check(const std::vector<ssw>& argv) {

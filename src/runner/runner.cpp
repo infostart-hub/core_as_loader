@@ -13,6 +13,7 @@
 #include <locale>
 #include <clocale>
 #include <cwchar>
+#include <format>
 
 #include "core_as/core_as.h"
 void* operator new(size_t size) {
@@ -31,7 +32,7 @@ check <ИмяМодуля> [параметры]    - Проверка модул
 api   <ИмяМодуля> [параметры]    - Вывод API модуля
 
 Параметры передаются запускаемому модулю в виде:
-Параметр /f - задаёт папку с модулем
+Параметр /f или -f задаёт папку с модулем, если они отличаются от дефолтной
 Каждый аргумент '/d строка' или '-d строка' передается как определение
 для препроцессора модуля, например:
 /d IDE=1 /d USECOOLFEATURE -D "POWER = 100"
@@ -85,7 +86,9 @@ int run(int argc, const wchar_t* argv[]) {
     CoreAsModule* pModule = core_as_getModule(argv[2], folder);
     if (!pModule)
         return 2;
-    return pModule->run(commands, defines, GetStdHandle(STD_OUTPUT_HANDLE)) ? 0 : 1;
+    int ret = pModule->run(commands, defines, GetStdHandle(STD_OUTPUT_HANDLE)) ? 0 : 1;
+    pModule->stop();
+    return ret;
 }
 
 int check(int argc, const wchar_t* argv[]) {

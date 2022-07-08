@@ -9,7 +9,7 @@
 
 StarterInterProcess&& stipc;
 
-int main(array<string>&& args) {
+int main(array<string>& args) {
     &&stipc = StarterInterProcess("Starter", function(const string& data) {
     });
     stipc.showNotify("Core.As cтартер", "Запущен стартер Core.As");

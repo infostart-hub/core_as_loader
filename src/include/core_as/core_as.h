@@ -28,19 +28,21 @@ public:
     // тот сможет получить в рантайме
     virtual void setParam(const wchar_t* name, const wchar_t* val) = 0;
     virtual void setParam(const wchar_t* name, uint64_t val) = 0;
+    // Останов модуля
+    virtual void stop() = 0;
 
     LogLevel currentLL() const { return currentLogLevel; }
     // Вспомогательные функции для вывода в лог
     template<LogLevel LL, typename T, typename...A>
-    void log(const u8symbol* format, T&& arg1, A&&...args) {
+    void log(const FmtString<u8symbol, T, A...> format, T&& arg1, A&&...args) {
         if (currentLogLevel >= LL)
-            doLog(LL, lstringa<300>().s_format(format, std::forward<T>(arg1), std::forward<A>(args)...));
+            doLog(LL, lstringa<300>{}.s_tformat(format, std::forward<T>(arg1), std::forward<A>(args)...));
     }
-    
+    // Вспомогательные функции для вывода в лог
     template<LogLevel LL, typename T, typename...A>
-    void log(const u16symbol* format, T&& arg1, A&&...args) {
+    void log(const FmtString<u16symbol, T, A...> format, T&& arg1, A&&...args) {
         if (currentLogLevel >= LL)
-            doLog(LL, lstringw<300>().s_format(format, std::forward<T>(arg1), std::forward<A>(args)...));
+            doLog(LL, lstringw<300>{}.s_tformat(format, std::forward<T>(arg1), std::forward<A>(args)...));
     }
 
     template<LogLevel LL>
@@ -55,15 +57,15 @@ public:
             doLog(LL, msg);
     }
 
-    template<LogLevel LL, typename A, std::enable_if_t<std::is_same_v<typename A::symb_type, char>, int> = 0>
-    void log(const strexpr<A>& expr) {
+    template<LogLevel LL, typename A, std::enable_if_t<is_strexpr_v<A> && std::is_same_v<typename A::symb_type, u8symbol>, int> = 0>
+    void log(const A& expr) {
         if (currentLogLevel >= LL)
-            doLog(LL, lstringa<300>(expr));
+            doLog(LL, lstringa<300>{expr});
     }
-    template<LogLevel LL, typename A, std::enable_if_t<std::is_same_v<typename A::symb_type, u16symbol>, int> = 0>
-    void log(const strexpr<A>& expr) {
+    template<LogLevel LL, typename A, std::enable_if_t<is_strexpr_v<A> && std::is_same_v<typename A::symb_type, u16symbol>, int> = 0>
+    void log(const A& expr) {
         if (currentLogLevel >= LL)
-            doLog(LL, lstringw<300>(expr));
+            doLog(LL, lstringw<300>{expr});
     }
 };
 
